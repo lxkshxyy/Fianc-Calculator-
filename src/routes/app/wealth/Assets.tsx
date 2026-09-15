@@ -1,0 +1,76 @@
+import { Landmark, ShieldCheck } from 'lucide-react'
+
+import { CurrencyText } from '@/components/ui/CurrencyText'
+import { MetricTile } from '@/components/ui/MetricTile'
+import { RecordList } from '@/components/ui/RecordList'
+import { isLiquid } from '@/data/schema'
+import { useDerived, useSnapshot } from '@/data/store/data'
+import { ModuleScreen, ModuleSection } from '../ModuleScreen'
+
+export function Assets() {
+  const snapshot = useSnapshot()
+  const derived = useDerived()
+  if (snapshot === null || derived === null) return null
+
+  const withoutNominee = snapshot.assets.filter((asset) => asset.nominee === null)
+
+  return (
+    <ModuleScreen
+      title="Assets"
+      subtitle="Everything you own. This is one half of your net worth."
+      icon={Landmark}
+      moduleId="assets"
+      summary={
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <MetricTile
+            label="Total assets"
+            icon={Landmark}
+            value={<CurrencyText value={derived.assetsTotal} size="title" tone="inherit" />}
+          />
+          <MetricTile
+            label="Reachable today"
+            icon={Landmark}
+            value={<CurrencyText value={derived.liquidAssets} size="title" tone="inherit" />}
+          />
+          <MetricTile
+            label="Net worth"
+            icon={Landmark}
+            value={<CurrencyText value={derived.netWorth} size="title" />}
+          />
+        </div>
+      }
+    >
+      <ModuleSection label="What you own">
+        <RecordList
+          rows={snapshot.assets.map((asset) => ({
+            id: asset.id,
+            icon: Landmark,
+            title: asset.name,
+            subtitle: `${asset.kind.replace('-', ' ')}${isLiquid(asset) ? ' · reachable today' : ''}`,
+            value: <CurrencyText value={asset.value} size="body" tone="inherit" />,
+            meta: asset.nominee === null ? 'No nominee' : `Nominee: ${asset.nominee}`,
+          }))}
+          empty={{
+            icon: Landmark,
+            title: 'Nothing recorded',
+            description: 'Add a bank balance or a property and your net worth starts working.',
+          }}
+        />
+      </ModuleSection>
+
+      {withoutNominee.length === 0 ? null : (
+        <ModuleSection label="Missing a nominee">
+          <RecordList
+            rows={withoutNominee.map((asset) => ({
+              id: `nom-${asset.id}`,
+              icon: ShieldCheck,
+              title: asset.name,
+              subtitle: 'No nominee named',
+            }))}
+            empty={{ icon: ShieldCheck, title: '', description: '' }}
+          />
+        </ModuleSection>
+      )}
+    </ModuleScreen>
+  )
+}

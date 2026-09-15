@@ -1,0 +1,104 @@
+name: Build Android APK
+
+# Runs on every push to main, and on demand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push cancels a build that is still running for an older one.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # needed to attach the APK to the "latest" release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # android/variables.gradle compiles against API 36. Naming it here means
+      # the build never depends on the Gradle plugin fetching it mid-build.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # §2.3 — the same four commands that gate every phase locally. Running them
+      # before the Android build means a broken commit fails in one minute
+      # instead of six, and the APK is never built from code that does not pass.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build web bundle
+        run: npm run build
+
+      # Regenerated from assets/icon.png rather than trusted from the commit, so
+      # the launcher icon is identical no matter what is in android/app/src/main/res.
+      - name: Generate launcher icons and splash
+        run: npx capacitor-assets generate --android
+
+      - name: Copy the bundle into the Android project
+        run: npx cap sync android
+
+      # Git on Windows does not carry the executable bit, so the checkout arrives
+      # without it and Gradle cannot start.
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Name it by commit
+        id: name
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "out/prosperitypath-${GITHUB_SHA::7}.apk"
+          echo "apk=out/prosperitypath-${GITHUB_SHA::7}.apk" >> "$GITHUB_OUTPUT"
+
+      # Two ways to get at it: the Actions run page (as a zip), and a release
+      # that always points at the newest build (as a plain .apk, which is what a
+      # phone can install with one tap and no unzipping).
+      - name: Upload to the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: prosperitypath-apk
+          path: ${{ steps.name.outputs.apk }}
+          if-no-files-found: error
+
+      - name: Publish as the latest build
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: |
+            Debug APK built from `${{ github.sha }}`.
+
+            Open this page on your phone and tap the .apk to install.
+            Android will ask once for permission to install from this source.
+          prerelease: true
+          files: ${{ steps.name.outputs.apk }}

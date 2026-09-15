@@ -1,0 +1,109 @@
+import { Bot, Send } from 'lucide-react'
+import { useState } from 'react'
+
+import { AppButton } from '@/components/ui/AppButton'
+import { Card } from '@/components/ui/Card'
+import { useDerived } from '@/data/store/data'
+import type { Derived } from '@/domain/derive'
+import { answer, type AssistantTurn } from '@/domain/assistant'
+import { ModuleScreen } from '../ModuleScreen'
+
+/**
+ * §13 — the AI Assistant is a deterministic shell. No model call in v1.
+ *
+ * It answers from the user's own figures, offline, instantly. A request that
+ * hangs or errors is exactly the thing §2.1 exists to prevent, and wiring a
+ * model in later is a feature flag, not a rewrite.
+ */
+export function Assistant() {
+  const derived = useDerived()
+  if (derived === null) return null
+  return <AssistantChat derived={derived} />
+}
+
+function AssistantChat({ derived }: { derived: Derived }) {
+  const [turns, setTurns] = useState<AssistantTurn[]>([])
+  const [text, setText] = useState('')
+
+  function send(): void {
+    const question = text.trim()
+    if (question.length === 0) return
+    setTurns((previous) => [
+      ...previous,
+      { role: 'user', body: question },
+      { role: 'assistant', body: answer(question, derived) },
+    ])
+    setText('')
+  }
+
+  return (
+    <ModuleScreen
+      title="AI Assistant"
+      subtitle="Ask about your own numbers. It reads what you have entered — nothing leaves this device."
+      icon={Bot}
+    >
+      <Card>
+        <div className="space-y-3">
+          {turns.length === 0 ? (
+            <div className="text-sm text-text-2">
+              <p>Try one of these:</p>
+              <ul className="mt-2 space-y-1.5">
+                {['What is my net worth?', 'How much am I saving?', 'What should I fix first?'].map(
+                  (example) => (
+                    <li key={example}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setText(example)
+                        }}
+                        className="rounded-tile text-gold underline underline-offset-2 hover:text-gold-strong"
+                      >
+                        {example}
+                      </button>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ) : (
+            turns.map((turn, index) => (
+              <p
+                key={`${turn.role}-${String(index)}`}
+                className={
+                  turn.role === 'user'
+                    ? 'ml-auto max-w-[85%] rounded-tile bg-gold-dim px-3 py-2 text-sm text-text'
+                    : 'max-w-[85%] rounded-tile bg-surface-2 px-3 py-2 text-sm text-text-2'
+                }
+              >
+                {turn.body}
+              </p>
+            ))
+          )}
+        </div>
+
+        <form
+          className="mt-4 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            send()
+          }}
+        >
+          <input
+            id="assistant-input"
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value)
+            }}
+            aria-label="Ask the assistant"
+            placeholder="Ask about your money…"
+            className="h-11 flex-1 rounded-tile border border-border bg-surface px-3 text-sm text-text placeholder:text-text-3 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+          />
+          <AppButton type="submit" disabled={text.trim().length === 0}>
+            <Send aria-hidden className="size-4" />
+            Ask
+          </AppButton>
+        </form>
+      </Card>
+    </ModuleScreen>
+  )
+}

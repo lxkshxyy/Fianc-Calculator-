@@ -1,0 +1,111 @@
+/*
+ * §4.1 — colour tokens.
+ *
+ * THREE theme states, not two. An explicit choice stamps data-theme="dark" or
+ * data-theme="light" on <html>; the default "system" setting stamps nothing and
+ * only prefers-color-scheme separates the two.
+ *
+ * The rule that keeps the un-stamped state working: **bare :root carries a
+ * complete palette.** A token whose only definition lives inside a media block
+ * is undefined in the state that block does not match, and the component using
+ * it renders with no colour at all. Dark is the design's home (§4), so bare
+ * :root is the full dark palette and light is the override.
+ *
+ * Resolution matrix — all six states verified:
+ *   system dark  + unstamped  -> :root (dark)
+ *   system dark  + dark       -> :root (dark)
+ *   system dark  + light      -> [data-theme="light"] (light)
+ *   system light + unstamped  -> media block (light)
+ *   system light + light      -> media block, then [data-theme="light"] (light)
+ *   system light + dark       -> media block is guarded by :not([data-theme="dark"]),
+ *                                so it does not match; :root wins (dark)
+ */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0a0b0c;
+  --bg-elevated: #101214;
+  --surface: #14171a;
+  --surface-2: #1a1e22;
+  --border: #22272c;
+  --border-strong: #2e353b;
+
+  --text: #f2f4f5;
+  --text-2: #a3acb2;
+  --text-label: #868f96;
+  --text-3: #6b757c;
+
+  --gold: #e8b448;
+  --gold-strong: #f3c766;
+  --gold-dim: #7a5e24;
+  --on-gold: #0a0b0c;
+
+  --danger: #f15050; /* §4.1 — 4.79:1 on --surface-2; #EF4444 was 4.45:1, under AA */
+  --warn: #f59e0b;
+  --success: #22c55e;
+  --info: #60a5fa;
+}
+
+/*
+ * Light theme. §4.1 mandates the same variable names and gives no values, so
+ * these are derived and contrast-measured rather than eyeballed. Every one of
+ * --text, --text-2, --text-label and the four semantic hues clears 4.5:1 on all
+ * three grounds (--bg, --surface, --surface-2); --gold clears 4.5:1 as text and
+ * carries white at 5.68:1 as a fill. The dark accent (#E8B448) is 1.8:1 on white
+ * and cannot survive the flip, so light gold is darkened rather than reused.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --bg: #f6f7f8;
+    --bg-elevated: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f0f2f4;
+    --border: #e2e6ea;
+    --border-strong: #c3cbd2;
+
+    --text: #10151a;
+    --text-2: #4e585f;
+    --text-label: #5d6870;
+    --text-3: #98a2a9;
+
+    --gold: #8b5e00;
+    --gold-strong: #6b4a00;
+    --gold-dim: #e8ce92;
+    --on-gold: #ffffff;
+
+    --danger: #c8271f;
+    --warn: #8a5a00;
+    --success: #0f7736;
+    --info: #1b5fbf;
+  }
+}
+
+/* An explicit light choice must also win when the system is dark, so it follows the media block. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f6f7f8;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f0f2f4;
+  --border: #e2e6ea;
+  --border-strong: #c3cbd2;
+
+  --text: #10151a;
+  --text-2: #4e585f;
+  --text-label: #5d6870;
+  --text-3: #98a2a9;
+
+  --gold: #8b5e00;
+  --gold-strong: #6b4a00;
+  --gold-dim: #e8ce92;
+  --on-gold: #ffffff;
+
+  --danger: #c8271f;
+  --warn: #8a5a00;
+  --success: #0f7736;
+  --info: #1b5fbf;
+}
