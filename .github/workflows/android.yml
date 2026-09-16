@@ -74,6 +74,18 @@ jobs:
           path: ~/.android/debug.keystore
           key: debug-keystore
 
+      - name: Reuse the debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: debug-keystore
+
+      - name: Reuse the debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: debug-keystore
+
       - name: Assemble debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
