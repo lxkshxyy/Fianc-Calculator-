@@ -214,12 +214,14 @@ export function routeMetaFor(pathname: string): { title: string; subtitle: strin
       return { title: group.label, subtitle: 'Everything in your ' + group.label.toLowerCase() }
     }
     const item = group.items.find((candidate) => candidate.path === segment)
-    if (item) return { title: item.label, subtitle: 'Phase ' + item.phase + ' builds this screen' }
+    /* No subtitle. It used to read "Phase N builds this screen", which is a note
+       to whoever was building the app, not something a user should ever see. */
+    if (item) return { title: item.label, subtitle: '' }
   }
 
   const unlisted = UNLISTED_PRIVATE_ROUTES.find((item) => item.path === segment)
   if (unlisted) {
-    return { title: unlisted.label, subtitle: 'Phase ' + unlisted.phase + ' builds this screen' }
+    return { title: unlisted.label, subtitle: '' }
   }
 
   return null

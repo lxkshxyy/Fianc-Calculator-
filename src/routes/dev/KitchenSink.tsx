@@ -72,15 +72,16 @@ function TokenAudit() {
   useEffect(() => {
     const read = (): void => {
       const style = window.getComputedStyle(document.documentElement)
-      setResolved(
-        TOKEN_NAMES.map((name) => ({ name, value: style.getPropertyValue(name).trim() })),
-      )
+      setResolved(TOKEN_NAMES.map((name) => ({ name, value: style.getPropertyValue(name).trim() })))
     }
     read()
     const query = window.matchMedia('(prefers-color-scheme: dark)')
     query.addEventListener('change', read)
     const observer = new MutationObserver(read)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
     return () => {
       query.removeEventListener('change', read)
       observer.disconnect()
@@ -92,30 +93,30 @@ function TokenAudit() {
   return (
     <Card>
       <CardHeader title="Token audit" />
-      <p className="mb-4 text-meta text-text-2">
+      <p className="text-meta text-text-2 mb-4">
         Every §4.1 token, resolved live from <code>:root</code>. An empty value means the token is
         defined only inside a media block and is undefined in the current state — which is the
         failure the un-stamped system theme exists to catch.
       </p>
       {missing.length > 0 ? (
-        <p className="mb-4 rounded-tile border border-danger px-3 py-2 text-meta text-danger">
+        <p className="rounded-tile border-danger text-meta text-danger mb-4 border px-3 py-2">
           {missing.length} token(s) unresolved: {missing.map((t) => t.name).join(', ')}
         </p>
       ) : (
-        <p className="mb-4 rounded-tile border border-success px-3 py-2 text-meta text-success">
+        <p className="rounded-tile border-success text-meta text-success mb-4 border px-3 py-2">
           All {resolved.length} tokens resolve in this state.
         </p>
       )}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {resolved.map((token) => (
-          <div key={token.name} className="flex items-center gap-2 rounded-tile bg-surface-2 p-2">
+          <div key={token.name} className="rounded-tile bg-surface-2 flex items-center gap-2 p-2">
             <span
-              className="size-6 shrink-0 rounded border border-border"
+              className="border-border size-6 shrink-0 rounded border"
               style={{ background: 'var(' + token.name + ')' }}
             />
             <span className="min-w-0">
-              <span className="block truncate text-caption text-text">{token.name}</span>
-              <span className="tabular block truncate text-micro text-text-2">
+              <span className="text-caption text-text block truncate">{token.name}</span>
+              <span className="tabular text-micro text-text-2 block truncate">
                 {token.value === '' ? 'UNRESOLVED' : token.value}
               </span>
             </span>
@@ -161,10 +162,10 @@ export function KitchenSink() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <SectionLabel>Phase 1 · Design system</SectionLabel>
-          <h1 className="mt-2 text-page font-bold tracking-tight text-text">
+          <h1 className="text-page text-text mt-2 font-bold tracking-tight">
             Kitchen <span className="text-gold">Sink</span>
           </h1>
-          <p className="mt-1 text-meta text-text-2">
+          <p className="text-meta text-text-2 mt-1">
             Every §4.4 component, in all three theme states.
           </p>
         </div>
@@ -231,7 +232,7 @@ export function KitchenSink() {
                 ),
               )}
             </div>
-            <p className="mt-4 text-caption text-text-2">
+            <p className="text-caption text-text-2 mt-4">
               Hover a compact figure to see the exact rupee value. Negative renders in{' '}
               <code>--danger</code>; null renders an em dash, never NaN.
             </p>
@@ -278,9 +279,7 @@ export function KitchenSink() {
             />
             <div className="py-2 text-center">
               <CurrencyText value={-1810000} size="hero" className="font-bold" />
-              <p className="mt-1 text-meta text-text-2">
-                Everything you own – everything you owe
-              </p>
+              <p className="text-meta text-text-2 mt-1">Everything you own – everything you owe</p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Tile>
@@ -317,7 +316,7 @@ export function KitchenSink() {
                     <span className="tabular text-caption text-text-3">{range}</span>
                   </div>
                 ))}
-                <p className="max-w-xs text-caption text-text-2">
+                <p className="text-caption text-text-2 max-w-xs">
                   Excellent is <code>--success</code> with a ring and check, not gold — §4.1 keeps
                   semantic colour separate from the accent.
                 </p>
@@ -337,17 +336,18 @@ export function KitchenSink() {
           <div className="-mx-4 overflow-x-auto overscroll-x-contain px-4 pt-3 pb-2">
             <div className="flex gap-4">
               {STAGE_FIXTURES.map((stage, index) => (
-                <StageCard
-                  key={stage.name}
-                  index={index + 1}
-                  name={stage.name}
-                  tagline={stage.tagline}
-                  wealthBand="Band pending from client"
-                  icon={stage.icon}
-                  tier={index > 2 ? 'diamond' : 'silver'}
-                  state={stage.state}
-                  progress={0.35}
-                />
+                <div key={stage.name} className="w-[248px] shrink-0">
+                  <StageCard
+                    index={index + 1}
+                    name={stage.name}
+                    tagline={stage.tagline}
+                    wealthBand="Band pending from client"
+                    icon={stage.icon}
+                    tier={index > 2 ? 'diamond' : 'silver'}
+                    state={stage.state}
+                    progress={0.35}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -373,7 +373,7 @@ export function KitchenSink() {
                 <Flag aria-hidden className="size-4" />
               </AppButton>
             </div>
-            <p className="mt-3 text-caption text-text-2">
+            <p className="text-caption text-text-2 mt-3">
               Every size clears 44×44 (§10.8). Tab through to see the <code>--text-2</code> focus
               outline — never a border swap (§4.6).
             </p>
@@ -392,7 +392,12 @@ export function KitchenSink() {
                 hint="Try 15k, 1.5L, 2 Cr, or something unparseable."
               />
               <div className="flex items-end">
-                <AppButton variant="primary" onClick={() => { setSheetOpen(true) }}>
+                <AppButton
+                  variant="primary"
+                  onClick={() => {
+                    setSheetOpen(true)
+                  }}
+                >
                   Open sheet
                 </AppButton>
               </div>
@@ -421,11 +426,15 @@ export function KitchenSink() {
                 <div className="space-y-2">
                   <Tile>
                     <SectionLabel>Interest saved</SectionLabel>
-                    <CurrencyText value={432000} size="title" className="mt-1 block font-semibold" />
+                    <CurrencyText
+                      value={432000}
+                      size="title"
+                      className="mt-1 block font-semibold"
+                    />
                   </Tile>
                   <Tile>
                     <SectionLabel>Tenure cut</SectionLabel>
-                    <p className="tabular mt-1 text-title font-semibold text-text">14 months</p>
+                    <p className="tabular text-title text-text mt-1 font-semibold">14 months</p>
                   </Tile>
                 </div>
               </Card>
@@ -436,7 +445,7 @@ export function KitchenSink() {
               <div className="space-y-3">
                 <Skeletons />
               </div>
-              <p className="mt-3 text-caption text-text-2">
+              <p className="text-caption text-text-2 mt-3">
                 Fixed heights, so arriving content does not shift the page (§10.7).
               </p>
             </Card>
@@ -453,10 +462,22 @@ export function KitchenSink() {
         description="§9.2 — the quick-add parser always confirms before it writes."
         footer={
           <div className="flex gap-3">
-            <AppButton variant="primary" block onClick={() => { setSheetOpen(false) }}>
+            <AppButton
+              variant="primary"
+              block
+              onClick={() => {
+                setSheetOpen(false)
+              }}
+            >
               Save
             </AppButton>
-            <AppButton variant="ghost" block onClick={() => { setSheetOpen(false) }}>
+            <AppButton
+              variant="ghost"
+              block
+              onClick={() => {
+                setSheetOpen(false)
+              }}
+            >
               Cancel
             </AppButton>
           </div>
@@ -464,8 +485,8 @@ export function KitchenSink() {
       >
         <div className="space-y-4">
           <p className="text-meta text-text-2">
-            Scroll to the end of this panel — the page behind it does not move
-            (<code>overscroll-behavior: contain</code>, §10.4), and closing restores your exact
+            Scroll to the end of this panel — the page behind it does not move (
+            <code>overscroll-behavior: contain</code>, §10.4), and closing restores your exact
             scroll position (§10.5).
           </p>
           <NumberField

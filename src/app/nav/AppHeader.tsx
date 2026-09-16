@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil } from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
@@ -77,10 +77,6 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <AppButton variant="outline" size="sm" className="hidden lg:inline-flex">
-            <Pencil aria-hidden className="size-4" />
-            Edit Dashboard
-          </AppButton>
           <TierBadge tier={tier} size="sm" />
           <AppButton
             variant="ghost"

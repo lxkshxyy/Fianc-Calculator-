@@ -33,7 +33,9 @@ describe('Dashboard', () => {
   it('renders the six §9.1 blocks on seeded data', async () => {
     await renderDashboard()
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/welcome back/i)
+    expect(screen.getByRole('heading', { level: 2, name: /welcome/i })).toHaveTextContent(
+      /welcome! to wrc/i,
+    )
     expect(screen.getByLabelText(/quick add a transaction/i)).toBeInTheDocument()
     expect(screen.getByText(/net worth/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/your journey/i)).toBeInTheDocument()

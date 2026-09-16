@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
+import { PreviewBanner } from '@/components/ui/PreviewBanner'
 import { DataGate } from './DataGate'
 import { RouteSkeleton } from './RouteBoundary'
 import { AppHeader } from './nav/AppHeader'
@@ -41,8 +42,7 @@ function useHorizontalScrollGuard(): void {
      * prevent, for the sake of a dev-only warning. The resize listener is the
      * fallback; §10.11 wants a re-measure on orientation change either way.
      */
-    const observer =
-      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check)
     observer?.observe(document.body)
     window.addEventListener('resize', check)
     window.addEventListener('orientationchange', check)
@@ -86,10 +86,11 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg lg:pl-[260px]">
+    <div className="bg-bg min-h-dvh lg:pl-[260px]">
       <Sidebar />
 
       <div className="flex min-h-dvh flex-col">
+        <PreviewBanner />
         <AppHeader
           onOpenMore={() => {
             setMoreOpen(true)

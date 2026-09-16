@@ -78,7 +78,6 @@ export function Dashboard() {
     void saveProfile({ dashboardLayout: null, hiddenDashboardSections: [] })
   }
 
-  const firstName = profile.displayName.split(' ')[0] ?? profile.displayName
 
   const sections: Record<SectionId, React.ReactNode> = {
     netWorth: <NetWorthCard derived={derived} />,
@@ -103,9 +102,12 @@ export function Dashboard() {
     <div className="space-y-6 pb-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-balance font-semibold text-page text-text tracking-tight">
-            Welcome back, <span className="text-gold">{firstName}</span>
-          </h1>
+          {/* h2, not h1: AppHeader already renders the page's h1 ("Dashboard").
+              Two h1s on one page is a screen-reader problem, and the styling is
+              unchanged — this is semantics, not looks. */}
+          <h2 className="text-balance font-semibold text-page text-text tracking-tight">
+            Welcome! to <span className="text-gold">WRC</span>
+          </h2>
           <p className="mt-1 text-sm text-text-2">Here is where your money stands today.</p>
         </div>
         <AppButton

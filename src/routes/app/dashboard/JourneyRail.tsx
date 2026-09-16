@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { PREVIEW_ALL } from '@/config/preview'
+import { APP_BASE } from '@/app/nav/navigation'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { StageCard } from '@/components/ui/StageCard'
 import type { Derived } from '@/domain/derive'
@@ -53,10 +55,32 @@ export function JourneyRail({ derived, tier }: { derived: Derived; tier: Tier })
 
       <div
         ref={railRef}
-        className="-mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 [scrollbar-width:thin]"
+        /*
+         * pt-3 is load-bearing. The CURRENT badge is positioned at -top-2, so it
+         * sits 8px above the card — and `overflow-x: auto` makes the browser clip
+         * the *vertical* axis too (a computed `visible` becomes `auto` when the
+         * other axis is not visible). Without the padding the badge is sliced in
+         * half. mt drops from 3 to 1 so the section spacing stays as it was.
+         *
+         * overscroll-x-contain stops a swipe past the last card from triggering
+         * the browser's back gesture (§10.4).
+         */
+        className="-mx-4 mt-1 flex snap-x snap-mandatory [scrollbar-width:thin] gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3 pb-2 sm:-mx-6 sm:px-6"
       >
         {STAGES.map((stage) => {
-          const state = stageState(stage, currentStageId, tier)
+          /*
+           * The real state, then preview on top of it. stageState stays pure —
+           * §8.1 keeps the domain free of UI concerns — so the ladder's own rules
+           * are unchanged and still under test. Preview only softens what is
+           * rendered, and only while PREVIEW_ALL is on.
+           */
+          const earnedState = stageState(stage, currentStageId, tier)
+          const state = PREVIEW_ALL && earnedState === 'locked' ? 'available' : earnedState
+
+          /* Each card opens the first module its stage unlocks, so the rail is a
+             way into the app rather than a picture of one. */
+          const target = stage.unlocks[0]
+
           return (
             <div
               key={stage.id}
@@ -64,6 +88,7 @@ export function JourneyRail({ derived, tier }: { derived: Derived; tier: Tier })
               className="w-[220px] shrink-0 snap-center sm:w-[240px]"
             >
               <StageCard
+                to={target === undefined ? undefined : `${APP_BASE}/${target}`}
                 index={stage.index}
                 name={stage.name}
                 tagline={stage.tagline}
