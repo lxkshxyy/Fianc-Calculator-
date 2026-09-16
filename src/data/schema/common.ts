@@ -8,7 +8,7 @@ import { z } from 'zod'
 export const Id = z.string().min(1)
 
 /** A calendar date, YYYY-MM-DD. Used wherever the time of day is meaningless. */
-export const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
+export const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date.')
 
 /** Epoch milliseconds. Used for record timestamps. */
 export const Timestamp = z.number().int().nonnegative()

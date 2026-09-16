@@ -4,6 +4,7 @@ import { Link, NavLink } from 'react-router-dom'
 
 import { AppButton } from '@/components/ui/AppButton'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { Wordmark } from '@/components/ui/Wordmark'
 
 /**
  * The logged-out chrome. §10 applies here too: one scroll owner, `100dvh`, and
@@ -31,12 +32,12 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="min-h-dvh bg-bg">
-      <header className="sticky top-0 z-40 border-border border-b bg-bg-elevated/95 backdrop-blur">
+    <div className="bg-bg min-h-dvh">
+      <header className="border-border bg-bg-elevated/95 sticky top-0 z-40 border-b backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2 rounded-tile font-semibold text-text">
-            <Sparkles aria-hidden className="size-4 text-gold" />
-            ProsperityPath
+          <Link to="/" className="rounded-tile text-text flex items-center gap-2 font-semibold">
+            <Sparkles aria-hidden className="text-accent size-4" />
+            <Wordmark className="text-body" />
           </Link>
 
           <nav aria-label="Main" className="ml-6 hidden flex-1 gap-5 lg:flex">
@@ -44,7 +45,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="rounded-tile text-sm text-text-2 transition-colors hover:text-text"
+                className="rounded-tile text-text-2 hover:text-text text-sm transition-colors"
               >
                 {item.label}
               </NavLink>
@@ -53,7 +54,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <Link to="/auth" className="hidden rounded-tile px-2 text-sm text-text-2 hover:text-text sm:block">
+            <Link
+              to="/auth"
+              className="rounded-tile text-text-2 hover:text-text hidden px-2 text-sm sm:block"
+            >
               Login
             </Link>
             <Link to="/auth?mode=signup">
@@ -66,9 +70,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
               }}
               aria-expanded={open}
               aria-label={open ? 'Close menu' : 'Open menu'}
-              className="rounded-tile p-2 text-text-2 hover:text-text lg:hidden"
+              className="rounded-tile text-text-2 hover:text-text p-2 lg:hidden"
             >
-              {open ? <X aria-hidden className="size-5" /> : <Menu aria-hidden className="size-5" />}
+              {open ? (
+                <X aria-hidden className="size-5" />
+              ) : (
+                <Menu aria-hidden className="size-5" />
+              )}
             </button>
           </div>
         </div>
@@ -83,7 +91,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     onClick={() => {
                       setOpen(false)
                     }}
-                    className="block rounded-tile py-3 text-sm text-text-2 hover:text-text"
+                    className="rounded-tile text-text-2 hover:text-text block py-3 text-sm"
                   >
                     {item.label}
                   </Link>
@@ -96,25 +104,25 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
       <main className="mx-auto w-full max-w-[1200px] px-4 pb-16 sm:px-6">{children}</main>
 
-      <footer className="border-border border-t bg-bg-elevated">
+      <footer className="border-border bg-bg-elevated border-t">
         <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
           <div>
-            <p className="flex items-center gap-2 font-semibold text-text">
-              <Sparkles aria-hidden className="size-4 text-gold" />
-              ProsperityPath
+            <p className="text-text flex items-center gap-2 font-semibold">
+              <Sparkles aria-hidden className="text-accent size-4" />
+              <Wordmark className="text-body" />
             </p>
-            <p className="mt-2 max-w-xs text-caption text-text-2">
+            <p className="text-caption text-text-2 mt-2 max-w-xs">
               A step-by-step path from knowing where your money goes to making it outlast you.
             </p>
           </div>
           <div>
-            <p className="font-medium text-caption text-text-label uppercase tracking-[0.1em]">
+            <p className="text-caption text-text-label font-medium tracking-[0.1em] uppercase">
               Product
             </p>
             <ul className="mt-3 space-y-2">
               {NAV.slice(0, 4).map((item) => (
                 <li key={item.to}>
-                  <Link to={item.to} className="rounded-tile text-sm text-text-2 hover:text-text">
+                  <Link to={item.to} className="rounded-tile text-text-2 hover:text-text text-sm">
                     {item.label}
                   </Link>
                 </li>
@@ -122,13 +130,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
             </ul>
           </div>
           <div>
-            <p className="font-medium text-caption text-text-label uppercase tracking-[0.1em]">
+            <p className="text-caption text-text-label font-medium tracking-[0.1em] uppercase">
               Legal
             </p>
             <ul className="mt-3 space-y-2">
               {LEGAL.map((item) => (
                 <li key={item.to}>
-                  <Link to={item.to} className="rounded-tile text-sm text-text-2 hover:text-text">
+                  <Link to={item.to} className="rounded-tile text-text-2 hover:text-text text-sm">
                     {item.label}
                   </Link>
                 </li>
@@ -137,7 +145,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="border-border border-t">
-          <p className="mx-auto w-full max-w-[1200px] px-4 py-4 text-caption text-text-3 sm:px-6">
+          <p className="text-caption text-text-3 mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6">
             Educational information only, not financial advice. Nothing here is a recommendation to
             buy or sell any product.
           </p>

@@ -187,8 +187,8 @@ function Chip({
       aria-pressed={selected}
       className={
         selected
-          ? 'rounded-full bg-gold px-3 py-2 font-medium text-on-gold text-sm'
-          : 'rounded-full border border-border px-3 py-2 text-sm text-text-2 hover:border-border-strong'
+          ? 'bg-gold text-on-gold rounded-full px-3 py-2 text-sm font-medium'
+          : 'border-border text-text-2 hover:border-border-strong rounded-full border px-3 py-2 text-sm'
       }
     >
       {label}
@@ -220,7 +220,7 @@ function Field({
     <label htmlFor={id} className="block">
       <span className="text-caption text-text-2">
         {label}
-        {required ? <span className="ml-0.5 text-danger">*</span> : null}
+        {required ? <span className="text-danger ml-0.5">*</span> : null}
       </span>
       <input
         id={id}
@@ -232,7 +232,7 @@ function Field({
         onChange={(event) => {
           onChange(event.target.value)
         }}
-        className="mt-1.5 h-11 w-full rounded-tile border border-border bg-surface px-3 text-sm text-text placeholder:text-text-3 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+        className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 mt-1.5 h-11 w-full border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
       />
     </label>
   )
@@ -319,17 +319,17 @@ export function InsuranceReviewForm() {
       <PublicShell>
         <section className="mx-auto max-w-lg py-16">
           <Card className="text-center">
-            <span className="inline-flex rounded-full bg-success/15 p-2.5">
-              <Check aria-hidden className="size-5 text-success" />
+            <span className="bg-success/15 inline-flex rounded-full p-2.5">
+              <Check aria-hidden className="text-success size-5" />
             </span>
-            <h1 className="mt-4 font-semibold text-text text-title">Request received</h1>
-            <p className="mt-2 text-sm text-text-2">
+            <h1 className="text-text text-title mt-4 font-semibold">Request received</h1>
+            <p className="text-text-2 mt-2 text-sm">
               Someone from the insurance team will be in touch within one working day.
             </p>
-            <p className="mt-5 rounded-tile bg-surface-2 p-3 font-mono text-sm text-text">
+            <p className="rounded-tile bg-surface-2 text-text mt-5 p-3 font-mono text-sm">
               {reference}
             </p>
-            <p className="mt-2 text-caption text-text-3">Keep this reference for any follow-up.</p>
+            <p className="text-caption text-text-3 mt-2">Keep this reference for any follow-up.</p>
             <div className="mt-6">
               <AppButton
                 block
@@ -351,16 +351,16 @@ export function InsuranceReviewForm() {
       <section className="mx-auto max-w-2xl py-10">
         <Link
           to="/request-centre"
-          className="inline-flex items-center gap-1.5 rounded-tile text-caption text-text-2 hover:text-text"
+          className="rounded-tile text-caption text-text-2 hover:text-text inline-flex items-center gap-1.5"
         >
           <ChevronLeft aria-hidden className="size-4" />
           Back to Request Centre
         </Link>
 
-        <h1 className="mt-4 text-balance font-semibold text-[clamp(1.6rem,4.5vw,2.25rem)] text-text tracking-tight">
+        <h1 className="text-text mt-4 text-[clamp(1.6rem,4.5vw,2.25rem)] font-semibold tracking-tight text-balance">
           Insurance Review
         </h1>
-        <p className="mt-2 text-sm text-text-2">
+        <p className="text-text-2 mt-2 text-sm">
           Seven short steps. Your answers are saved as you go, so you can come back to this.
         </p>
 
@@ -374,16 +374,16 @@ export function InsuranceReviewForm() {
               {Math.round(((step + 1) / STEP_TITLES.length) * 100)}%
             </span>
           </div>
-          <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+          <span className="bg-surface-2 mt-2 block h-1.5 w-full overflow-hidden rounded-full">
             <span
-              className="block h-full rounded-full bg-gold transition-[width] duration-300"
+              className="bg-gold block h-full rounded-full transition-[width] duration-300"
               style={{ width: `${String(((step + 1) / STEP_TITLES.length) * 100)}%` }}
             />
           </span>
         </div>
 
         <Card className="mt-5">
-          <h2 className="font-semibold text-lead text-text">{STEP_TITLES[step]}</h2>
+          <h2 className="text-lead text-text font-semibold">{STEP_TITLES[step]}</h2>
 
           <div className="mt-5 space-y-4">
             {step === 0 ? (
@@ -429,7 +429,7 @@ export function InsuranceReviewForm() {
                   }}
                 />
 
-                <div className="rounded-tile border border-border bg-surface-2 p-3">
+                <div className="rounded-tile border-border bg-surface-2 border p-3">
                   <label className="flex items-start gap-2.5">
                     <input
                       type="checkbox"
@@ -439,11 +439,11 @@ export function InsuranceReviewForm() {
                       }}
                       className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
                     />
-                    <span className="text-sm text-text-2">
+                    <span className="text-text-2 text-sm">
                       The insurance team may contact me about this request.
                     </span>
                   </label>
-                  <p className="mt-2 text-caption text-text-3">
+                  <p className="text-caption text-text-3 mt-2">
                     Your details are used only to answer this request and are kept until it is
                     closed.{' '}
                     <Link
@@ -577,7 +577,7 @@ export function InsuranceReviewForm() {
                   onChange={(event) => {
                     patch({ comments: event.target.value })
                   }}
-                  className="mt-1.5 w-full rounded-tile border border-border bg-surface p-3 text-sm text-text placeholder:text-text-3 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+                  className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 mt-1.5 w-full border p-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                 />
               </label>
             ) : null}
@@ -591,9 +591,9 @@ export function InsuranceReviewForm() {
                   {DOCUMENT_SLOTS.map((slot) => (
                     <label
                       key={slot}
-                      className="flex cursor-pointer items-center gap-3 rounded-tile border border-border border-dashed bg-surface px-3 py-3 text-sm text-text-2 hover:border-border-strong"
+                      className="rounded-tile border-border bg-surface text-text-2 hover:border-border-strong flex cursor-pointer items-center gap-3 border border-dashed px-3 py-3 text-sm"
                     >
-                      <Paperclip aria-hidden className="size-4 shrink-0 text-text-3" />
+                      <Paperclip aria-hidden className="text-text-3 size-4 shrink-0" />
                       <span className="flex-1">{slot}</span>
                       <span className="text-caption text-gold">Choose file</span>
                       <input
@@ -611,20 +611,20 @@ export function InsuranceReviewForm() {
                 </div>
 
                 {uploadError === null ? null : (
-                  <p className="flex items-start gap-2 text-caption text-danger">
+                  <p className="text-caption text-danger flex items-start gap-2">
                     <AlertCircle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
                     {uploadError}
                   </p>
                 )}
 
                 {draft.attachments.length === 0 ? null : (
-                  <ul className="divide-y divide-border overflow-hidden rounded-tile border border-border">
+                  <ul className="divide-border rounded-tile border-border divide-y overflow-hidden border">
                     {draft.attachments.map((file) => (
                       <li key={file.id} className="flex items-center gap-3 px-3 py-2.5">
-                        <span className="min-w-0 flex-1 truncate text-sm text-text">
+                        <span className="text-text min-w-0 flex-1 truncate text-sm">
                           {file.name}
                         </span>
-                        <span className="shrink-0 text-caption text-text-3 tabular-nums">
+                        <span className="text-caption text-text-3 shrink-0 tabular-nums">
                           {Math.round(file.bytes / 1024)} KB
                         </span>
                         <button
@@ -637,7 +637,7 @@ export function InsuranceReviewForm() {
                               ),
                             })
                           }}
-                          className="rounded-tile p-1 text-text-2 hover:text-danger"
+                          className="rounded-tile text-text-2 hover:text-danger p-1"
                         >
                           <Trash2 aria-hidden className="size-4" />
                         </button>
@@ -652,7 +652,7 @@ export function InsuranceReviewForm() {
           {showErrors && errors.length > 0 ? (
             <ul className="mt-4 space-y-1">
               {errors.map((error) => (
-                <li key={error} className="flex items-start gap-2 text-caption text-danger">
+                <li key={error} className="text-caption text-danger flex items-start gap-2">
                   <AlertCircle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
                   {error}
                 </li>
@@ -701,11 +701,11 @@ export function InsuranceReviewForm() {
               setStep(0)
               setShowErrors(false)
             }}
-            className="rounded-tile text-caption text-text-2 underline underline-offset-2 hover:text-text"
+            className="rounded-tile text-caption text-text-2 hover:text-text underline underline-offset-2"
           >
             Discard this draft
           </button>
-          <p className="mt-1 text-caption text-text-3">
+          <p className="text-caption text-text-3 mt-1">
             Removes everything you have typed from this device.
           </p>
         </div>

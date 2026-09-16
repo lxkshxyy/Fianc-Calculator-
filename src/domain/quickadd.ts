@@ -54,7 +54,10 @@ const INVESTMENT_VERBS = ['invested', 'sip', 'bought shares', 'put into', 'depos
  */
 const CATEGORY_KEYWORDS: { keywords: string[]; category: string }[] = [
   { keywords: ['rent', 'landlord'], category: 'Rent' },
-  { keywords: ['grocery', 'groceries', 'sabzi', 'vegetables', 'supermarket'], category: 'Groceries' },
+  {
+    keywords: ['grocery', 'groceries', 'sabzi', 'vegetables', 'supermarket'],
+    category: 'Groceries',
+  },
   {
     keywords: ['electricity', 'water bill', 'gas bill', 'broadband', 'wifi', 'utility', 'bill'],
     category: 'Utilities',

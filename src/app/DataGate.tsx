@@ -28,8 +28,8 @@ export function DataGate({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto w-full max-w-md py-10">
         <Card>
-          <h2 className="font-semibold text-text text-lg">Your data could not be opened</h2>
-          <p className="mt-2 text-sm text-text-2">
+          <h2 className="text-text text-lg font-semibold">Your data could not be opened</h2>
+          <p className="text-text-2 mt-2 text-sm">
             {error ?? 'Storage did not respond.'} Your records are still on this device.
           </p>
           <div className="mt-4">
@@ -49,9 +49,9 @@ export function DataGate({ children }: { children: ReactNode }) {
   if (status !== 'ready') {
     return (
       <div className="space-y-4 py-2" aria-busy="true" aria-label="Loading your data">
-        <div className="h-[132px] animate-pulse rounded-[14px] border border-border bg-surface" />
-        <div className="h-[220px] animate-pulse rounded-[14px] border border-border bg-surface" />
-        <div className="h-[180px] animate-pulse rounded-[14px] border border-border bg-surface" />
+        <div className="border-border bg-surface h-[132px] animate-pulse rounded-[14px] border" />
+        <div className="border-border bg-surface h-[220px] animate-pulse rounded-[14px] border" />
+        <div className="border-border bg-surface h-[180px] animate-pulse rounded-[14px] border" />
       </div>
     )
   }

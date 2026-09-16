@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { type CSSProperties, useId } from 'react'
 
 import { cn } from '@/lib/cn'
 
@@ -30,6 +30,9 @@ export function ProgressRing({
   strokeWidth?: number
   className?: string
 }) {
+  /* Two rings share a page, so the gradient needs an id that cannot collide. */
+  const gradientId = useId()
+
   const safeValue =
     value === null || !Number.isFinite(value) ? null : Math.min(Math.max(value, 0), 1)
 
@@ -55,6 +58,14 @@ export function ProgressRing({
           role="img"
           aria-label={label + ': ' + (safeValue === null ? 'not available' : percentLabel)}
         >
+          {/* Lit from the top-left, the same direction the meters are lit. */}
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent-strong)" />
+              <stop offset="55%" stopColor="var(--accent)" />
+              <stop offset="100%" stopColor="var(--accent-dim)" />
+            </linearGradient>
+          </defs>
           <circle
             cx={centre}
             cy={centre}
@@ -70,7 +81,7 @@ export function ProgressRing({
               cy={centre}
               r={radius}
               fill="none"
-              stroke="var(--gold)"
+              stroke={`url(#${gradientId})`}
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -80,11 +91,11 @@ export function ProgressRing({
           )}
         </svg>
         <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
-          <span className="tabular text-title font-semibold text-text">{percentLabel}</span>
+          <span className="tabular text-title text-text font-semibold">{percentLabel}</span>
         </span>
       </div>
       <div className="text-center">
-        <p className="text-meta font-medium text-text">{label}</p>
+        <p className="text-meta text-text font-medium">{label}</p>
         {caption === undefined ? null : <p className="text-caption text-text-2">{caption}</p>}
       </div>
     </div>

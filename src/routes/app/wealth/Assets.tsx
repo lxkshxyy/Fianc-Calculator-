@@ -1,5 +1,7 @@
 import { Landmark, ShieldCheck } from 'lucide-react'
 
+import { AddRecordSheet } from '@/components/ui/AddRecordSheet'
+import { ASSET_FIELDS, AssetDraftForm } from '../addForms'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { RecordList } from '@/components/ui/RecordList'
@@ -20,6 +22,17 @@ export function Assets() {
       subtitle="Everything you own. This is one half of your net worth."
       icon={Landmark}
       moduleId="assets"
+      action={
+        <AddRecordSheet
+          collection="assets"
+          title="Add an asset"
+          description="Anything you own that has value — accounts, gold, property, a vehicle."
+          buttonLabel="Add asset"
+          submitLabel="Save asset"
+          fields={ASSET_FIELDS}
+          schema={AssetDraftForm}
+        />
+      }
       summary={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <MetricTile

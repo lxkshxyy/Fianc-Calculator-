@@ -1,4 +1,4 @@
-# Running ProsperityPath on your phone
+# Running Wealth Rebuild Circle on your phone
 
 There are two different things here, and mixing them up is what makes it look
 broken. **Viewing** the app on your phone is easy. **Installing** it as an app —
@@ -11,7 +11,7 @@ address, no matter what the code does.
 ## 1. Just look at it on the phone (fastest, 10 seconds)
 
 ```
-npm run dev:mobile
+npm.cmd run dev:mobile
 ```
 
 Scan the QR in the terminal. If Chrome shows
@@ -37,7 +37,7 @@ so this has to be the **production build**, served through a tunnel.
 **Terminal 1** — build and serve the real thing:
 
 ```
-npm run phone
+npm.cmd run phone
 ```
 
 That runs the build, then serves it on port **4173** on your network.
@@ -100,8 +100,10 @@ so they belong after the app is finished, not now.
 | `npm run phone` | Build, then serve the production app on the network (port 4173) |
 | `npm run preview:mobile` | Serve an existing build on the network, no rebuild |
 
-## Windows note
+## Why every command says `npm.cmd`
 
-If PowerShell refuses with *"running scripts is disabled on this system"*, use
-`npm.cmd` / `npx.cmd` instead of `npm` / `npx`, or run the commands from Command
-Prompt rather than PowerShell.
+PowerShell blocks `npm` and `npx` on this machine — they are PowerShell scripts
+and the execution policy stops them. `npm.cmd` and `npx.cmd` are the batch
+versions of the same tools and run fine. Same npm, nothing reconfigured.
+
+On macOS or Linux, drop the `.cmd`.

@@ -100,7 +100,8 @@ export function derive(snapshot: Snapshot): Derived {
   const avgMonthlyExpense =
     monthsWithData === 0 ? 0 : sum(windowed.map((txn) => txn.amount)) / monthsWithData
 
-  const investmentTypeCount = new Set(snapshot.investments.map((investment) => investment.kind)).size
+  const investmentTypeCount = new Set(snapshot.investments.map((investment) => investment.kind))
+    .size
   const termCoverTotal = sum(
     snapshot.policies.filter((policy) => policy.kind === 'term').map((policy) => policy.cover),
   )

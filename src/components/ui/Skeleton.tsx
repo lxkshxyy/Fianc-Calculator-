@@ -21,7 +21,7 @@ export function Skeleton({
       aria-hidden
       style={{ height, width }}
       className={cn(
-        'animate-pulse bg-surface-2',
+        'bg-surface-2 animate-pulse',
         rounded === 'card' && 'rounded-card',
         rounded === 'tile' && 'rounded-tile',
         rounded === 'pill' && 'rounded-pill',

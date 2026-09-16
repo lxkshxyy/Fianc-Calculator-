@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ProsperityPath</string>
-    <string name="title_activity_main">ProsperityPath</string>
+    <string name="app_name">WRC</string>
+    <string name="title_activity_main">WRC</string>
     <string name="package_name">ai.prosperitypath.app</string>
     <string name="custom_url_scheme">ai.prosperitypath.app</string>
 </resources>

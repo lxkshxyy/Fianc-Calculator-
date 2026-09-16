@@ -47,10 +47,10 @@ export function RequestCentre() {
   return (
     <PublicShell>
       <section className="py-12">
-        <h1 className="text-balance font-semibold text-[clamp(1.75rem,5vw,2.5rem)] text-text tracking-tight">
+        <h1 className="text-text text-[clamp(1.75rem,5vw,2.5rem)] font-semibold tracking-tight text-balance">
           Request Centre
         </h1>
-        <p className="mt-3 max-w-xl text-lead text-text-2">
+        <p className="text-lead text-text-2 mt-3 max-w-xl">
           Tell the team what you need. No account required — someone reads it and gets back to you
           within one working day.
         </p>
@@ -60,14 +60,14 @@ export function RequestCentre() {
         <div className="grid gap-3 sm:grid-cols-2">
           {SERVICES.map((service) => (
             <Card key={service.slug} className="flex h-full flex-col">
-              <service.icon aria-hidden className="size-5 text-gold" />
-              <h2 className="mt-3 font-semibold text-text">{service.title}</h2>
-              <p className="mt-1.5 flex-1 text-sm text-text-2">{service.line}</p>
+              <service.icon aria-hidden className="text-gold size-5" />
+              <h2 className="text-text mt-3 font-semibold">{service.title}</h2>
+              <p className="text-text-2 mt-1.5 flex-1 text-sm">{service.line}</p>
               <div className="mt-5">
                 {service.available ? (
                   <Link
                     to={`/request-centre/${service.slug}`}
-                    className="inline-flex items-center gap-1.5 rounded-tile font-medium text-gold text-sm hover:text-gold-strong focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+                    className="rounded-tile text-gold hover:text-gold-strong focus-visible:outline-text-2 inline-flex items-center gap-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Start request
                     <ChevronRight aria-hidden className="size-4" />

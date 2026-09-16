@@ -30,10 +30,10 @@ export function StatusDot({
 }) {
   return (
     <span className={cn('relative inline-flex size-2.5 shrink-0', className)}>
-      <span className={cn('size-2.5 rounded-pill', TONE_CLASS[tone])} />
+      <span className={cn('rounded-pill size-2.5', TONE_CLASS[tone])} />
       {ringed ? (
         <span
-          className={cn('absolute -inset-1 rounded-pill border', {
+          className={cn('rounded-pill absolute -inset-1 border', {
             'border-danger': tone === 'danger',
             'border-warn': tone === 'warn',
             'border-success': tone === 'success',

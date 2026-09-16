@@ -213,7 +213,7 @@ export function KitchenSink() {
                 ] as const
               ).map(([label, cls]) => (
                 <p key={label} className={cls + ' text-text'}>
-                  <span className="text-text-3">{label}</span> — Prosperity {formatFull(1_570_000)}
+                  <span className="text-text-3">{label}</span> — {formatFull(1_570_000)}
                 </p>
               ))}
             </div>

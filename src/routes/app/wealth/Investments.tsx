@@ -27,7 +27,8 @@ export function Investments() {
   const portfolioReturn = xirr(allFlows)
 
   const expensive = snapshot.investments.filter(
-    (investment) => investment.expenseRatio !== null && investment.expenseRatio > HIGH_EXPENSE_RATIO,
+    (investment) =>
+      investment.expenseRatio !== null && investment.expenseRatio > HIGH_EXPENSE_RATIO,
   )
 
   return (
@@ -79,7 +80,8 @@ export function Investments() {
               title: investment.name,
               subtitle: `${investment.kind.replace('-', ' ')}${investment.sip ? ' · monthly SIP' : ''}`,
               value: <CurrencyText value={investment.current} size="body" tone="inherit" />,
-              meta: rate === null ? 'Return not yet computable' : `${formatPercent(rate, 1)} a year`,
+              meta:
+                rate === null ? 'Return not yet computable' : `${formatPercent(rate, 1)} a year`,
             }
           })}
           empty={{

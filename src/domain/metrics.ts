@@ -64,11 +64,7 @@ export function emergencyFundMonths(liquidAssets: number, avgMonthlyExpense: num
  * ------------------------------------------------------------------ */
 
 export type HealthComponentId =
-  | 'emergencyFund'
-  | 'savingsRate'
-  | 'debtToIncome'
-  | 'insurance'
-  | 'diversification'
+  'emergencyFund' | 'savingsRate' | 'debtToIncome' | 'insurance' | 'diversification'
 
 export type HealthComponent = {
   id: HealthComponentId
@@ -230,6 +226,18 @@ export const HEALTH_BAND_LABEL: Record<HealthBand, string> = {
   gettingThere: 'Getting There',
   strong: 'Strong',
   excellent: 'Excellent',
+}
+
+/*
+ * Deliberately growth metaphors rather than faces. A frowning emoji next to
+ * somebody's own finances is a small unkindness for no information gain — these
+ * say the same thing about where they are without passing judgement on them.
+ */
+export const HEALTH_BAND_EMOJI: Record<HealthBand, string> = {
+  needsWork: '🌱',
+  gettingThere: '🌤️',
+  strong: '💪',
+  excellent: '🏆',
 }
 
 export const HEALTH_BAND_TONE: Record<HealthBand, 'danger' | 'warn' | 'success'> = {

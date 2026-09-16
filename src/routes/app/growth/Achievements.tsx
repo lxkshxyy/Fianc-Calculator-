@@ -24,8 +24,8 @@ export function Achievements() {
               <span
                 className={
                   locked
-                    ? 'rounded-tile bg-surface-2 p-2 text-text-3'
-                    : 'rounded-tile bg-gold-dim p-2 text-text'
+                    ? 'rounded-tile bg-surface-2 text-text-3 p-2'
+                    : 'rounded-tile bg-gold-dim text-text p-2'
                 }
               >
                 {locked ? (
@@ -35,17 +35,17 @@ export function Achievements() {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-sm text-text">{entry.title}</h3>
-                <p className="mt-1 text-caption text-text-2">{entry.description}</p>
+                <h3 className="text-text text-sm font-medium">{entry.title}</h3>
+                <p className="text-caption text-text-2 mt-1">{entry.description}</p>
                 {locked ? (
                   <div className="mt-3">
                     <Meter value={entry.progress} />
-                    <p className="mt-1.5 text-caption text-text-3">
+                    <p className="text-caption text-text-3 mt-1.5">
                       {Math.round(entry.progress * 100)}% there
                     </p>
                   </div>
                 ) : (
-                  <p className="mt-2 text-caption text-text-3">Earned {entry.earnedOn}</p>
+                  <p className="text-caption text-text-3 mt-2">Earned {entry.earnedOn}</p>
                 )}
               </div>
             </div>
@@ -71,7 +71,7 @@ export function Achievements() {
         <>
           <ModuleSection label={`Earned · ${String(earned.length)}`}>
             {earned.length === 0 ? (
-              <p className="text-sm text-text-2">None yet. The first one is the easiest.</p>
+              <p className="text-text-2 text-sm">None yet. The first one is the easiest.</p>
             ) : (
               grid(earned, false)
             )}

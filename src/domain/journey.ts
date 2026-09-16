@@ -36,6 +36,14 @@ export type Stage = {
   /** Upper bound, in rupees. `null` on the last stage — it is open-ended. */
   bandTo: number | null
   icon: LucideIcon
+  /**
+   * A plain-text marker for the stage, alongside the icon.
+   *
+   * An emoji is not decoration here: it survives being pasted into a
+   * notification, a share sheet or a reminder, where a Lucide icon does not.
+   * Provisional like the names — one line to change when the client's copy lands.
+   */
+  emoji: string
   tier: StageTier
   /** Completing every task promotes the user to the next stage (§7). */
   checklist: StageTask[]
@@ -52,6 +60,7 @@ export const STAGES: Stage[] = [
     bandFrom: null,
     bandTo: 100_000,
     icon: Sparkles,
+    emoji: '🔍',
     tier: 'silver',
     checklist: [
       { id: 'clarity.income', label: 'Add every income source', moduleId: 'income' },
@@ -69,6 +78,7 @@ export const STAGES: Stage[] = [
     bandFrom: 100_000,
     bandTo: 300_000,
     icon: Compass,
+    emoji: '💧',
     tier: 'silver',
     checklist: [
       { id: 'leaks.budget', label: 'Set a limit on every category', moduleId: 'budget' },
@@ -85,6 +95,7 @@ export const STAGES: Stage[] = [
     bandFrom: 300_000,
     bandTo: 1_000_000,
     icon: ShieldCheck,
+    emoji: '🛡️',
     tier: 'diamond',
     checklist: [
       { id: 'stability.fund', label: 'Reach six months of expenses in cash', moduleId: 'goals' },
@@ -101,6 +112,7 @@ export const STAGES: Stage[] = [
     bandFrom: 1_000_000,
     bandTo: 5_000_000,
     icon: Rocket,
+    emoji: '⚡',
     tier: 'diamond',
     checklist: [
       { id: 'optimisation.regime', label: 'Compare both tax regimes', moduleId: 'tax' },
@@ -117,6 +129,7 @@ export const STAGES: Stage[] = [
     bandFrom: 5_000_000,
     bandTo: 10_000_000,
     icon: Gem,
+    emoji: '📈',
     tier: 'diamond',
     checklist: [
       { id: 'growth.invest', label: 'Invest across four asset types', moduleId: 'investments' },
@@ -133,6 +146,7 @@ export const STAGES: Stage[] = [
     bandFrom: 10_000_000,
     bandTo: null,
     icon: Crown,
+    emoji: '👑',
     tier: 'diamond',
     checklist: [
       { id: 'legacy.nominees', label: 'Name a nominee on every holding', moduleId: 'assets' },

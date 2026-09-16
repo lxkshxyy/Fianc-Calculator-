@@ -1,6 +1,7 @@
 import { ArrowLeft, Construction } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { Wordmark } from '@/components/ui/Wordmark'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionLabel } from '@/components/ui/SectionLabel'
@@ -42,13 +43,13 @@ export function PublicStub() {
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[1440px] px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <Link to="/" className="text-title font-bold tracking-tight text-text">
-          Prosperity<span className="text-gold">Path</span>
+        <Link to="/" className="text-title text-text font-bold tracking-tight">
+          <Wordmark />
         </Link>
         {signedIn ? (
           <Link
             to="/app/dashboard"
-            className="inline-flex min-h-11 items-center gap-2 rounded-button border border-border px-3 text-meta text-text transition-colors duration-150 hover:border-border-strong hover:bg-surface-2"
+            className="rounded-button border-border text-meta text-text hover:border-border-strong hover:bg-surface-2 inline-flex min-h-11 items-center gap-2 border px-3 transition-colors duration-150"
           >
             Back to dashboard
           </Link>
@@ -64,7 +65,7 @@ export function PublicStub() {
           action={
             <Link
               to="/"
-              className="inline-flex min-h-11 items-center gap-2 rounded-button px-3 text-meta text-text-2 hover:text-text"
+              className="rounded-button text-meta text-text-2 hover:text-text inline-flex min-h-11 items-center gap-2 px-3"
             >
               <ArrowLeft aria-hidden className="size-4" />
               Home

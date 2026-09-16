@@ -84,12 +84,12 @@ export function Sheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/*
-        * A div, not a button: as a button this full-screen backdrop was a focusable
-        * tab stop that sits outside the aria-modal subtree, so assistive tech is told
-        * to ignore it — a silent, invisible stop — and it duplicated the header X's
-        * "Close" name. The X at the top of the panel is the one labelled control.
-        */}
-      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-bg/70" />
+       * A div, not a button: as a button this full-screen backdrop was a focusable
+       * tab stop that sits outside the aria-modal subtree, so assistive tech is told
+       * to ignore it — a silent, invisible stop — and it duplicated the header X's
+       * "Close" name. The X at the top of the panel is the one labelled control.
+       */}
+      <div aria-hidden onClick={onClose} className="bg-bg/70 absolute inset-0" />
       <div
         ref={panelRef}
         role="dialog"
@@ -97,8 +97,8 @@ export function Sheet({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'relative flex max-h-[85dvh] w-full flex-col border border-border bg-bg-elevated',
-          'rounded-t-card sm:max-w-lg sm:rounded-card',
+          'border-border bg-bg-elevated relative flex max-h-[85dvh] w-full flex-col border',
+          'rounded-t-card sm:rounded-card sm:max-w-lg',
           /*
            * §10.3 — a bottom-anchored sheet with no footer (MoreSheet) otherwise ends
            * flush with the viewport, putting its last control inside the home-indicator
@@ -107,9 +107,9 @@ export function Sheet({
           'pb-[env(safe-area-inset-bottom)] sm:pb-0',
         )}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border p-4 sm:p-5">
+        <div className="border-border flex items-start justify-between gap-3 border-b p-4 sm:p-5">
           <div className="space-y-1">
-            <h2 className="text-title font-semibold text-text">{title}</h2>
+            <h2 className="text-title text-text font-semibold">{title}</h2>
             {description === undefined ? null : (
               <p className="text-meta text-text-2">{description}</p>
             )}
@@ -122,9 +122,7 @@ export function Sheet({
         <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">{children}</div>
 
         {footer === undefined ? null : (
-          <div className="border-t border-border p-4 sm:p-5">
-            {footer}
-          </div>
+          <div className="border-border border-t p-4 sm:p-5">{footer}</div>
         )}
       </div>
     </div>

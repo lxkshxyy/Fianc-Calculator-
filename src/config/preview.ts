@@ -14,7 +14,9 @@
  * are paid — see PAYWALL.md for the current list. Flipping this back to `false`
  * restores every lock exactly as it was.
  *
- * A banner is shown across the app while this is on, so it cannot ship enabled
- * without somebody noticing.
+ * There is no longer a banner in the app saying so — it was visible to anyone
+ * being shown the build, which is not what a reminder to the developer should
+ * be. The reminder now lives where only the developer looks: `node qa.mjs`
+ * prints a loud line while this is on, and it prints on every CI build.
  */
 export const PREVIEW_ALL = true

@@ -23,8 +23,8 @@ export function TierBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-pill border font-medium',
-        size === 'sm' ? 'px-2 py-0.5 text-micro' : 'px-2.5 py-1 text-caption',
+        'rounded-pill inline-flex items-center gap-1.5 border font-medium',
+        size === 'sm' ? 'text-micro px-2 py-0.5' : 'text-caption px-2.5 py-1',
         isDiamond
           ? 'border-gold-dim bg-gold/10 text-gold'
           : 'border-border-strong bg-surface-2 text-text-2',

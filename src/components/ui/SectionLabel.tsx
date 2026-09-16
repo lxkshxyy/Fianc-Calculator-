@@ -11,10 +11,7 @@ import { cn } from '@/lib/cn'
 export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <p
-      className={cn(
-        'text-micro font-medium tracking-[0.1em] text-text-label uppercase',
-        className,
-      )}
+      className={cn('text-micro text-text-label font-medium tracking-[0.1em] uppercase', className)}
     >
       {children}
     </p>

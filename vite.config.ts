@@ -25,6 +25,15 @@ const TUNNEL_HOSTS = ['.trycloudflare.com', '.loca.lt', '.ngrok-free.app', '.ngr
  */
 const TUNNELLING = process.env['npm_lifecycle_event'] === 'dev:tunnel'
 
+/*
+ * The QR codes are for a phone, and they are about fifty lines tall between
+ * them — on `npm run dev` they push Vite's own banner, and with it the
+ * `Local: http://localhost:5173/` line, clean off the top of the terminal. That
+ * makes the dev server look like it failed to start when it is running fine.
+ * So they print only for the script that is actually about a phone.
+ */
+const SHOW_QR = process.env['npm_lifecycle_event'] === 'dev:mobile'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -35,7 +44,7 @@ export default defineConfig({
      * can be checked in a desktop browser at 360px — a notch, a home indicator
      * and a real thumb are not simulable.
      */
-    qrcode(),
+    ...(SHOW_QR ? [qrcode()] : []),
     /*
      * §10 — this is what makes it an app rather than a site: installable, with
      * a home-screen icon, and working with no connection.
@@ -51,8 +60,8 @@ export default defineConfig({
       injectRegister: null,
       includeAssets: ['favicon-32x32.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'ProsperityPath',
-        short_name: 'Prosperity',
+        name: 'Wealth Rebuild Circle',
+        short_name: 'WRC',
         description: 'A step-by-step path to knowing — and growing — where your money stands.',
         theme_color: '#0a0b0c',
         background_color: '#0a0b0c',

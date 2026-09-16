@@ -16,7 +16,9 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'ai.prosperitypath.app',
-  appName: 'ProsperityPath',
+  /* The short form: Android truncates a launcher label past ~12 characters,
+     so the app picks the abbreviation rather than letting an ellipsis pick it. */
+  appName: 'WRC',
   webDir: 'dist',
   android: {
     /* Painted behind the WebView, so a slow first frame is the app's own dark

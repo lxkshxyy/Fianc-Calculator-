@@ -1,6 +1,8 @@
 import { CreditCard, Gauge, TrendingDown } from 'lucide-react'
 import { useState } from 'react'
 
+import { AddRecordSheet } from '@/components/ui/AddRecordSheet'
+import { LIABILITY_FIELDS, LIABILITY_INITIAL, LiabilityDraft } from '../addForms'
 import { Card } from '@/components/ui/Card'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
@@ -8,11 +10,13 @@ import { NumberField } from '@/components/ui/NumberField'
 import { RecordList } from '@/components/ui/RecordList'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useDerived, useSnapshot } from '@/data/store/data'
+import { useT } from '@/i18n'
 import { prepaymentSaving, remainingInterest } from '@/domain/loan'
 import { EM_DASH, formatPercent } from '@/lib/money'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 
 export function EmiCredit() {
+  const t = useT()
   const snapshot = useSnapshot()
   const derived = useDerived()
   const [loanId, setLoanId] = useState<string | null>(null)
@@ -30,19 +34,31 @@ export function EmiCredit() {
 
   return (
     <ModuleScreen
-      title="EMI & Credit"
-      subtitle="What you owe, what it costs you, and what paying early would buy."
+      title={t('nav.emi-credit')}
+      subtitle={t('screen.emi-credit.subtitle')}
       icon={CreditCard}
       moduleId="emi-credit"
+      action={
+        <AddRecordSheet
+          collection="liabilities"
+          title={t('emi.addTitle')}
+          description={t('emi.addDescription')}
+          buttonLabel={t('emi.add')}
+          submitLabel={t('emi.save')}
+          fields={LIABILITY_FIELDS}
+          schema={LiabilityDraft}
+          initial={LIABILITY_INITIAL}
+        />
+      }
       summary={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <MetricTile
-            label="Monthly EMI"
+            label={t('emi.monthlyEmi')}
             icon={CreditCard}
             value={<CurrencyText value={derived.monthlyEmiTotal} size="title" tone="inherit" />}
           />
           <MetricTile
-            label="Share of income"
+            label={t('emi.shareOfIncome')}
             icon={Gauge}
             value={
               <span className="text-title tabular-nums">{formatPercent(derived.debtToIncome)}</span>
@@ -52,13 +68,13 @@ export function EmiCredit() {
                 ? undefined
                 : {
                     direction: derived.debtToIncome > 0.2 ? 'up' : 'down',
-                    text: derived.debtToIncome > 0.2 ? 'above the 20% mark' : 'within a safe range',
+                    text: derived.debtToIncome > 0.2 ? t('emi.aboveMark') : t('emi.safeRange'),
                     isGood: derived.debtToIncome <= 0.2,
                   }
             }
           />
           <MetricTile
-            label="Credit score"
+            label={t('emi.creditScore')}
             icon={Gauge}
             value={
               <span className="text-title tabular-nums">
@@ -69,7 +85,7 @@ export function EmiCredit() {
         </div>
       }
     >
-      <ModuleSection label="Loans">
+      <ModuleSection label={t('emi.loans')}>
         <RecordList
           onSelect={setLoanId}
           rows={snapshot.liabilities.map((loan) => {
@@ -78,35 +94,39 @@ export function EmiCredit() {
               id: loan.id,
               icon: CreditCard,
               title: loan.name,
-              subtitle: `${String(loan.annualRate)}% · ${String(loan.tenureRemaining)} months left`,
+              subtitle:
+                String(loan.annualRate) +
+                '% · ' +
+                t('emi.monthsLeft', { count: loan.tenureRemaining }),
               value: <CurrencyText value={loan.outstanding} size="body" tone="inherit" />,
               meta:
                 interest === null ? (
-                  'Interest not clearing'
+                  t('emi.notClearing')
                 ) : (
                   <>
-                    <CurrencyText value={interest} size="body" tone="inherit" /> interest to come
+                    <CurrencyText value={interest} size="body" tone="inherit" />{' '}
+                    {t('emi.interestToCome')}
                   </>
                 ),
             }
           })}
           empty={{
             icon: CreditCard,
-            title: 'No loans recorded',
-            description: 'Add a loan to see what it is really costing you over its remaining life.',
+            title: t('emi.emptyTitle'),
+            description: t('emi.emptyBody'),
           }}
         />
       </ModuleSection>
 
       {selected === null ? null : (
-        <ModuleSection label="Prepayment calculator">
+        <ModuleSection label={t('emi.prepayment')}>
           <Card>
-            <p className="text-sm text-text-2">
-              If you paid a lump sum off <span className="text-text">{selected.name}</span> today:
+            <p className="text-text-2 text-sm">
+              {t('emi.prepaymentLead', { name: selected.name })}
             </p>
             <div className="mt-4 max-w-sm">
               <NumberField
-                label="Lump sum"
+                label={t('emi.lumpSum')}
                 value={prepayText}
                 onValueChange={(raw, parsed) => {
                   setPrepayText(raw)
@@ -117,7 +137,7 @@ export function EmiCredit() {
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-tile bg-surface-2 p-3">
-                <SectionLabel>Interest saved</SectionLabel>
+                <SectionLabel>{t('emi.interestSaved')}</SectionLabel>
                 <div className="mt-1">
                   {saving === null ? (
                     <span className="text-lead text-text-2">{EM_DASH}</span>
@@ -127,23 +147,21 @@ export function EmiCredit() {
                 </div>
               </div>
               <div className="rounded-tile bg-surface-2 p-3">
-                <SectionLabel>Months saved</SectionLabel>
-                <p className="mt-1 text-lead text-text tabular-nums">
+                <SectionLabel>{t('emi.monthsSaved')}</SectionLabel>
+                <p className="text-lead text-text mt-1 tabular-nums">
                   {saving === null ? EM_DASH : saving.monthsSaved}
                 </p>
               </div>
             </div>
 
             {prepay !== null && saving === null ? (
-              <p className="mt-3 text-caption text-warn">
-                This EMI does not currently clear the loan, so a saving cannot be worked out.
-              </p>
+              <p className="text-caption text-warn mt-3">{t('emi.noSaving')}</p>
             ) : null}
           </Card>
         </ModuleSection>
       )}
 
-      <ModuleSection label="Credit history">
+      <ModuleSection label={t('emi.creditHistory')}>
         <RecordList
           rows={[...snapshot.creditScores]
             .sort((a, b) => (a.recordedOn < b.recordedOn ? 1 : -1))
@@ -155,8 +173,8 @@ export function EmiCredit() {
             }))}
           empty={{
             icon: Gauge,
-            title: 'No score recorded',
-            description: 'Add your score when you check it, and the trend builds itself.',
+            title: t('emi.noScoreTitle'),
+            description: t('emi.noScoreBody'),
           }}
         />
       </ModuleSection>

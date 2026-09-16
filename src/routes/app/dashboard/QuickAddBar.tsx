@@ -79,7 +79,7 @@ export function QuickAddBar() {
         <div className="relative flex-1">
           <Sparkles
             aria-hidden
-            className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-gold"
+            className="text-gold pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
           />
           <input
             id="quick-add"
@@ -89,7 +89,7 @@ export function QuickAddBar() {
             }}
             placeholder="Type anything — 'paid 15k rent' or 'invested 10k in mutual funds'"
             aria-label="Quick add a transaction"
-            className="h-11 w-full rounded-tile border border-border bg-surface pr-3 pl-9 text-sm text-text placeholder:text-text-3 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+            className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 h-11 w-full border pr-3 pl-9 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
           />
         </div>
         <AppButton type="submit" disabled={text.trim().length === 0}>
@@ -135,8 +135,8 @@ export function QuickAddBar() {
                     aria-pressed={draft.kind === kind}
                     className={
                       draft.kind === kind
-                        ? 'rounded-full bg-gold px-3 py-1.5 font-medium text-on-gold text-sm'
-                        : 'rounded-full border border-border px-3 py-1.5 text-sm text-text-2 hover:border-border-strong'
+                        ? 'bg-gold text-on-gold rounded-full px-3 py-1.5 text-sm font-medium'
+                        : 'border-border text-text-2 hover:border-border-strong rounded-full border px-3 py-1.5 text-sm'
                     }
                   >
                     {KIND_LABEL[kind]}
@@ -144,7 +144,7 @@ export function QuickAddBar() {
                 ))}
               </div>
               {draft.confidence.kind ? null : (
-                <p className="mt-1.5 text-caption text-warn">Guessed — check this is right.</p>
+                <p className="text-caption text-warn mt-1.5">Guessed — check this is right.</p>
               )}
             </div>
 
@@ -169,7 +169,7 @@ export function QuickAddBar() {
                 onChange={(event) => {
                   setDraft({ ...draft, note: event.target.value })
                 }}
-                className="mt-1.5 h-11 w-full rounded-tile border border-border bg-surface px-3 text-sm text-text focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+                className="rounded-tile border-border bg-surface text-text focus-visible:outline-text-2 mt-1.5 h-11 w-full border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
               />
             </label>
 
@@ -188,7 +188,7 @@ export function QuickAddBar() {
                 }}
                 className="size-4 accent-[var(--gold)]"
               />
-              <span className="text-sm text-text-2">This repeats every month</span>
+              <span className="text-text-2 text-sm">This repeats every month</span>
             </label>
           </div>
         )}

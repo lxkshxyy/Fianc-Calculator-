@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 
 import { cn } from '@/lib/cn'
+import { useT } from '@/i18n'
 import { formatFull, parseAmount } from '@/lib/money'
 
 /**
@@ -17,6 +18,7 @@ export function NumberField({
   onValueChange,
   placeholder = `e.g. 15k, 1.5L, ${formatFull(15_000)}`,
   hint,
+  error,
   disabled = false,
   className,
 }: {
@@ -26,17 +28,28 @@ export function NumberField({
   onValueChange: (raw: string, parsed: number | null) => void
   placeholder?: string
   hint?: string
+  /**
+   * A message from whoever owns the form, shown whatever the field's own state.
+   *
+   * Without this the field could only complain about text it had itself failed
+   * to parse, and only after a blur — so "Enter a number" on an empty field that
+   * was never touched had nowhere to appear, and a submit blocked by an empty
+   * amount looked like a button that simply did nothing.
+   */
+  error?: string
   disabled?: boolean
   className?: string
 }) {
+  const t = useT()
   const id = useId()
   const [touched, setTouched] = useState(false)
   const parsed = parseAmount(value)
-  const showError = touched && value.trim() !== '' && parsed === null
+  const unreadable = touched && value.trim() !== '' && parsed === null
+  const showError = unreadable || (error !== undefined && error !== '')
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-meta font-medium text-text">
+      <label htmlFor={id} className="text-meta text-text font-medium">
         {label}
       </label>
       <input
@@ -57,7 +70,7 @@ export function NumberField({
           onValueChange(next, parseAmount(next))
         }}
         className={cn(
-          'tabular min-h-11 w-full rounded-button border bg-surface-2 px-3 text-body text-text',
+          'tabular rounded-button bg-surface-2 text-body text-text min-h-11 w-full border px-3',
           'placeholder:text-text-3 disabled:cursor-not-allowed disabled:opacity-60',
           'transition-colors duration-150',
           showError ? 'border-danger' : 'border-border hover:border-border-strong',
@@ -65,13 +78,15 @@ export function NumberField({
       />
       <p
         id={id + '-hint'}
-        className={cn('min-h-[18px] text-caption', showError ? 'text-danger' : 'text-text-2')}
+        className={cn('text-caption min-h-[18px]', showError ? 'text-danger' : 'text-text-2')}
       >
-        {showError
-          ? 'Not a recognisable amount. Try 15k, 1.5L or 15,000.'
-          : parsed === null
-            ? (hint ?? '')
-            : formatFull(parsed)}
+        {unreadable
+          ? t('form.unreadableAmount')
+          : showError
+            ? error
+            : parsed === null
+              ? (hint ?? '')
+              : formatFull(parsed)}
       </p>
     </div>
   )

@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Self-hosted, not a CDN link — the app has to render correctly with no network. */
+@import '@fontsource-variable/outfit';
 @import './tokens.css';
 
 /*
@@ -19,10 +21,36 @@
   --color-text-label: var(--text-label);
   --color-text-3: var(--text-3);
 
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-dim: var(--accent-dim);
+  --color-on-accent: var(--on-accent);
+
+  --color-reward: var(--reward);
+  --color-reward-dim: var(--reward-dim);
+  --color-on-reward: var(--on-reward);
+
+  /* Aliases of the accent — kept so existing `text-gold` / `bg-gold` keep working. */
   --color-gold: var(--gold);
   --color-gold-strong: var(--gold-strong);
   --color-gold-dim: var(--gold-dim);
   --color-on-gold: var(--on-gold);
+
+  /*
+   * §4.2 — two families on purpose. Outfit is the geometric display face and
+   * carries headings; Inter stays on body text and every number, because its
+   * tabular figures are what keep a column of rupee amounts aligned. A
+   * geometric face set at 12px in a dense table is a readability regression, so
+   * the split is deliberate rather than a half-finished migration.
+   */
+  --font-display: 'Outfit Variable', 'Outfit', ui-sans-serif, system-ui, sans-serif;
+
+  --color-cat-sky: var(--cat-sky);
+  --color-cat-mint: var(--cat-mint);
+  --color-cat-violet: var(--cat-violet);
+  --color-cat-amber: var(--cat-amber);
+  --color-cat-rose: var(--cat-rose);
+  --color-cat-teal: var(--cat-teal);
 
   --color-danger: var(--danger);
   --color-warn: var(--warn);
@@ -40,9 +68,16 @@
   --text-page: 34px;
   --text-hero: 44px;
 
-  /* §4.3 radii — cards 14, tiles 10, buttons 10, pills 999. */
-  --radius-card: 14px;
-  --radius-tile: 10px;
+  /* §4.3b — density-driven spacing. `p-card`, `space-y-section` and `gap-grid`
+     follow whatever data-density is on <html>, so one switch respaces the app. */
+  --spacing-card: var(--pad-card);
+  --spacing-section: var(--gap-section);
+  --spacing-grid: var(--gap-grid);
+
+  /* §4.3 radii. Cards went 14 -> 18 and tiles 10 -> 12: the softer corner is
+     what reads as "clean" in the references, and it costs nothing. */
+  --radius-card: 18px;
+  --radius-tile: 12px;
   --radius-button: 10px;
   --radius-pill: 999px;
 }
@@ -68,6 +103,18 @@
       sans-serif;
     font-size: 14px;
     line-height: 1.5;
+  }
+
+  /*
+   * Headings only. Body text and every figure stay on Inter — see the note on
+   * --font-display. Applied here rather than on each component so no screen had
+   * to change, and so a heading added later is right by default.
+   */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   /* §4.3 — a hairline is the default edge; Tailwind v4 otherwise inherits currentColor. */
@@ -107,8 +154,95 @@
   }
 }
 
+/*
+ * §4.6b — meters, with depth.
+ *
+ * "3D" here is light, not geometry. A WebGL chart on a phone costs a renderer,
+ * a frame budget and a blank canvas for anyone whose GPU is blocked, to show
+ * five percentages. The same read comes from the two cues an eye actually uses:
+ * the track is a groove (inset shadow, darker at the top edge), and the fill is
+ * a rounded bar lit from above (gradient, a bright top highlight, a shadow it
+ * casts into the groove). It costs nothing, it prints, and it degrades to a
+ * plain bar wherever a filter is unsupported.
+ */
+.meter-track {
+  position: relative;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 45%),
+    inset 0 -1px 0 rgb(255 255 255 / 4%);
+}
+
+.meter-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 999px;
+  /* Lit from above: a highlight along the top, the base hue below. */
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--meter-hue) 100%, white 38%),
+    var(--meter-hue) 55%,
+    color-mix(in srgb, var(--meter-hue) 100%, black 18%)
+  );
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 35%),
+    0 0 10px color-mix(in srgb, var(--meter-hue) 45%, transparent);
+  /*
+   * The resting state is the real width. The growth is an entrance, added by
+   * .reveal when the card scrolls into view — so it is never missed during page
+   * load, and it replays each time you come back to it.
+   */
+  width: var(--meter-to);
+}
+
+.reveal .meter-fill {
+  animation: meter-fill 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The row fades up as the bar grows — the "slight animation" on appearing. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal .fade-rise {
+  animation: fade-rise 450ms ease-out both;
+}
+
+@keyframes meter-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--meter-to);
+  }
+}
+
+/* The light theme's groove is a dent in paper, not a hole in metal. */
+:root[data-theme='light'] .meter-track,
+:root:not([data-theme='dark']) .meter-track {
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 12%),
+    inset 0 -1px 0 rgb(255 255 255 / 60%);
+}
+
+/*
+ * The ring gets the same lighting: a gradient stroke defined in the SVG, plus a
+ * soft shadow so the arc lifts off its track rather than sitting flush in it.
+ */
 .ring-fill {
-  animation: ring-fill 400ms ease-out both;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
+}
+
+.reveal .ring-fill {
+  animation: ring-fill 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

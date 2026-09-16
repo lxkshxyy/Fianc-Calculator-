@@ -1,20 +1,30 @@
 import { Banknote, PlusCircle } from 'lucide-react'
 
+import { AddRecordSheet } from '@/components/ui/AddRecordSheet'
+import { INCOME_CONSTANTS, INCOME_FIELDS, IncomeDraft } from '../addForms'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { RecordList } from '@/components/ui/RecordList'
 import { useDerived, useSnapshot } from '@/data/store/data'
-import { monthlyValue } from '@/data/schema'
+import { useT } from '@/i18n'
+import type { TranslationKey } from '@/i18n/en'
+import { monthlyValue, type IncomeCadence } from '@/data/schema'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 
-const CADENCE_LABEL: Record<string, string> = {
-  monthly: 'every month',
-  quarterly: 'every quarter',
-  annual: 'once a year',
-  irregular: 'irregular',
+/*
+ * Keyed on the cadence union, not `string`. An exhaustive Record means adding a
+ * cadence to the schema is a compile error here rather than a row that quietly
+ * renders the raw enum value to a user.
+ */
+const CADENCE_LABEL: Record<IncomeCadence, TranslationKey> = {
+  monthly: 'cadence.monthly',
+  quarterly: 'cadence.quarterly',
+  annual: 'cadence.annual',
+  irregular: 'cadence.irregular',
 }
 
 export function Income() {
+  const t = useT()
   const snapshot = useSnapshot()
   const derived = useDerived()
   if (snapshot === null || derived === null) return null
@@ -23,37 +33,49 @@ export function Income() {
 
   return (
     <ModuleScreen
-      title="Income"
-      subtitle="Every rupee coming in, normalised to a monthly figure so the totals compare."
+      title={t('nav.income')}
+      subtitle={t('screen.income.subtitle')}
       icon={Banknote}
       moduleId="income"
+      action={
+        <AddRecordSheet
+          collection="incomeSources"
+          title={t('income.addTitle')}
+          description={t('income.addDescription')}
+          buttonLabel={t('income.add')}
+          submitLabel={t('income.save')}
+          fields={INCOME_FIELDS}
+          schema={IncomeDraft}
+          constants={INCOME_CONSTANTS}
+        />
+      }
       summary={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <MetricTile
-            label="Monthly total"
+            label={t('income.monthlyTotal')}
             icon={Banknote}
             value={<CurrencyText value={derived.monthlyIncome} size="title" tone="inherit" />}
           />
           <MetricTile
-            label="Active sources"
+            label={t('income.activeSources')}
             icon={PlusCircle}
             value={<span className="text-title tabular-nums">{active.length}</span>}
           />
           <MetricTile
-            label="Annualised"
+            label={t('income.annualised')}
             icon={Banknote}
             value={<CurrencyText value={derived.monthlyIncome * 12} size="title" tone="inherit" />}
           />
         </div>
       }
     >
-      <ModuleSection label="Sources">
+      <ModuleSection label={t('income.sources')}>
         <RecordList
           rows={snapshot.incomeSources.map((source) => ({
             id: source.id,
             icon: Banknote,
             title: source.name,
-            subtitle: `${CADENCE_LABEL[source.cadence] ?? source.cadence}${source.active ? '' : ' · paused'}`,
+            subtitle: t(CADENCE_LABEL[source.cadence]) + (source.active ? '' : t('cadence.paused')),
             value: <CurrencyText value={source.amount} size="body" tone="inherit" />,
             meta:
               source.cadence === 'monthly' ? undefined : (
@@ -64,9 +86,8 @@ export function Income() {
           }))}
           empty={{
             icon: Banknote,
-            title: 'No income recorded',
-            description:
-              'Add a salary or a side income and your savings rate, tax estimate and stage all start working.',
+            title: t('income.emptyTitle'),
+            description: t('income.emptyBody'),
           }}
         />
       </ModuleSection>

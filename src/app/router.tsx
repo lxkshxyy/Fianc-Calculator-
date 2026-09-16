@@ -98,7 +98,8 @@ const REAL_SCREENS: Record<string, () => Promise<{ default: ComponentType }>> = 
       default: m.IncomeOpportunities,
     })),
   budget: () => import('@/routes/app/money/Budget').then((m) => ({ default: m.Budget })),
-  'emi-credit': () => import('@/routes/app/money/EmiCredit').then((m) => ({ default: m.EmiCredit })),
+  'emi-credit': () =>
+    import('@/routes/app/money/EmiCredit').then((m) => ({ default: m.EmiCredit })),
   tax: () => import('@/routes/app/money/Tax').then((m) => ({ default: m.Tax })),
 
   investments: () =>
@@ -121,8 +122,7 @@ const REAL_SCREENS: Record<string, () => Promise<{ default: ComponentType }>> = 
   family: () => import('@/routes/app/tools/Family').then((m) => ({ default: m.Family })),
   settings: () => import('@/routes/app/tools/Settings').then((m) => ({ default: m.Settings })),
 
-  onboarding: () =>
-    import('@/routes/app/Onboarding').then((m) => ({ default: m.Onboarding })),
+  onboarding: () => import('@/routes/app/Onboarding').then((m) => ({ default: m.Onboarding })),
   upgrade: () => import('@/routes/app/Upgrade').then((m) => ({ default: m.Upgrade })),
 }
 
@@ -144,13 +144,24 @@ const PRIVATE_CHILDREN: RouteObject[] = [
  */
 export const routes: RouteObject[] = [
   ...PUBLIC_ROUTES,
-  {
-    path: '/dev/kitchen-sink',
-    element: lazyRoute(() =>
-      import('@/routes/dev/KitchenSink').then((module) => ({ default: module.KitchenSink })),
-    ),
-    errorElement: <RouteErrorBoundary />,
-  },
+  /*
+   * The kitchen sink is a developer page — every token, every component, every
+   * currency boundary, with spec section numbers all over it. It was reachable
+   * in the shipped build by anyone who guessed the URL. `import.meta.env.DEV` is
+   * false in `npm run build`, so Rollup drops the whole branch and the import
+   * with it: the screen is not merely hidden in the APK, it is not in it.
+   */
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/kitchen-sink',
+          element: lazyRoute(() =>
+            import('@/routes/dev/KitchenSink').then((module) => ({ default: module.KitchenSink })),
+          ),
+          errorElement: <RouteErrorBoundary />,
+        },
+      ]
+    : []),
   {
     path: '/app',
     element: (

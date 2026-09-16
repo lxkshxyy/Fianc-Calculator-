@@ -19,7 +19,7 @@ export function Card({
   return (
     <Element
       className={cn(
-        'rounded-card border border-border bg-surface p-4 sm:p-5',
+        'rounded-card border-border bg-surface p-card border',
         'transition-colors duration-150',
         className,
       )}
@@ -50,7 +50,7 @@ export function CardHeader({
     <div className="mb-4 flex items-start justify-between gap-3">
       <div className="flex items-center gap-2">
         {icon ? <span className="text-text-2">{icon}</span> : null}
-        <h3 className="text-body font-semibold text-text">{title}</h3>
+        <h3 className="text-body text-text font-semibold">{title}</h3>
       </div>
       {action}
     </div>

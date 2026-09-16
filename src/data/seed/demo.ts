@@ -1,11 +1,5 @@
 import { FIRST_STAGE_ID } from '../../domain/journey'
-import {
-  DEFAULT_CATEGORY_NAMES,
-  newId,
-  nowMs,
-  type Profile,
-  type TaxProfile,
-} from '../schema'
+import { DEFAULT_CATEGORY_NAMES, newId, nowMs, type Profile, type TaxProfile } from '../schema'
 import type { Collections, Snapshot } from '../repo/types'
 
 /**
@@ -31,7 +25,10 @@ function iso(offsetDays: number): string {
   return `${year}-${month}-${day}`
 }
 
-function stamp<T extends object>(prefix: string, value: T): T & {
+function stamp<T extends object>(
+  prefix: string,
+  value: T,
+): T & {
   id: string
   createdAt: number
   updatedAt: number

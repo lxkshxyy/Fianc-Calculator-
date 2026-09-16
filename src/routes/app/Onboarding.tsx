@@ -42,11 +42,31 @@ const QUESTIONS: Question[] = [
     prompt: 'Roughly what comes in each month?',
     options: INCOME_BANDS.map(([from, to]) => bandOption(from, to)),
   },
-  { id: 'savings', prompt: 'How much do you have set aside?', options: ['Nothing yet', 'Less than a month', 'A few months', 'Six months or more'] },
-  { id: 'debt', prompt: 'Any loans running?', options: ['None', 'One', 'Two or three', 'More than three'] },
-  { id: 'goal', prompt: 'What matters most right now?', options: ['Stop overspending', 'Build a cushion', 'Grow what I have', 'Plan for family'] },
-  { id: 'horizon', prompt: 'How far are you thinking ahead?', options: ['This month', 'This year', 'Five years', 'A lifetime'] },
-  { id: 'language', prompt: 'Which do you read more comfortably?', options: ['English', 'हिन्दी', 'Both'] },
+  {
+    id: 'savings',
+    prompt: 'How much do you have set aside?',
+    options: ['Nothing yet', 'Less than a month', 'A few months', 'Six months or more'],
+  },
+  {
+    id: 'debt',
+    prompt: 'Any loans running?',
+    options: ['None', 'One', 'Two or three', 'More than three'],
+  },
+  {
+    id: 'goal',
+    prompt: 'What matters most right now?',
+    options: ['Stop overspending', 'Build a cushion', 'Grow what I have', 'Plan for family'],
+  },
+  {
+    id: 'horizon',
+    prompt: 'How far are you thinking ahead?',
+    options: ['This month', 'This year', 'Five years', 'A lifetime'],
+  },
+  {
+    id: 'language',
+    prompt: 'Which do you read more comfortably?',
+    options: ['English', 'हिन्दी', 'Both'],
+  },
 ]
 
 export function Onboarding() {
@@ -82,10 +102,12 @@ export function Onboarding() {
             </span>
           )}
         </div>
-        <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+        <span className="bg-surface-2 mt-2 block h-1.5 w-full overflow-hidden rounded-full">
           <span
-            className="block h-full rounded-full bg-gold transition-[width] duration-300"
-            style={{ width: `${String(((done ? QUESTIONS.length : step) / QUESTIONS.length) * 100)}%` }}
+            className="bg-gold block h-full rounded-full transition-[width] duration-300"
+            style={{
+              width: `${String(((done ? QUESTIONS.length : step) / QUESTIONS.length) * 100)}%`,
+            }}
           />
         </span>
       </div>
@@ -93,13 +115,13 @@ export function Onboarding() {
       {done ? (
         <Card>
           <div className="text-center">
-            <span className="inline-flex rounded-full bg-gold-dim p-2">
-              <Check aria-hidden className="size-5 text-text" />
+            <span className="bg-gold-dim inline-flex rounded-full p-2">
+              <Check aria-hidden className="text-text size-5" />
             </span>
-            <h1 className="mt-3 text-balance font-semibold text-page text-text">
+            <h1 className="text-page text-text mt-3 font-semibold text-balance">
               You are starting at {stage?.name ?? 'the beginning'}
             </h1>
-            <p className="mt-2 text-sm text-text-2">
+            <p className="text-text-2 mt-2 text-sm">
               {stage?.tagline ?? 'Everyone starts somewhere.'} There are{' '}
               {String(STAGES.length - (stage?.index ?? 1))} stages above you, ending at{' '}
               {formatCompact(STAGES[STAGES.length - 1]?.bandFrom ?? 0)}.
@@ -111,6 +133,7 @@ export function Onboarding() {
               <StageCard
                 index={stage.index}
                 name={stage.name}
+                emoji={stage.emoji}
                 tagline={stage.tagline}
                 wealthBand=""
                 icon={stage.icon}
@@ -135,7 +158,7 @@ export function Onboarding() {
         </Card>
       ) : (
         <Card>
-          <h1 className="text-balance font-semibold text-title text-text">{question.prompt}</h1>
+          <h1 className="text-title text-text font-semibold text-balance">{question.prompt}</h1>
           <div className="mt-5 space-y-2">
             {question.options.map((option) => (
               <button
@@ -144,7 +167,7 @@ export function Onboarding() {
                 onClick={() => {
                   choose(option)
                 }}
-                className="w-full rounded-tile border border-border bg-surface px-4 py-3.5 text-left text-sm text-text transition-colors hover:border-border-strong hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+                className="rounded-tile border-border bg-surface text-text hover:border-border-strong hover:bg-surface-2 focus-visible:outline-text-2 w-full border px-4 py-3.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {option}
               </button>
@@ -156,7 +179,7 @@ export function Onboarding() {
               onClick={() => {
                 setStep((value) => Math.max(0, value - 1))
               }}
-              className="mt-4 rounded-tile text-caption text-text-2 underline underline-offset-2 hover:text-text"
+              className="rounded-tile text-caption text-text-2 hover:text-text mt-4 underline underline-offset-2"
             >
               Back
             </button>

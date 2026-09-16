@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { routeMetaFor } from '@/app/nav/navigation'
 import { useData } from '@/data/store/data'
 import { Dashboard } from './Dashboard'
 
@@ -33,14 +34,23 @@ describe('Dashboard', () => {
   it('renders the six §9.1 blocks on seeded data', async () => {
     await renderDashboard()
 
-    expect(screen.getByRole('heading', { level: 2, name: /welcome/i })).toHaveTextContent(
-      /welcome! to wrc/i,
-    )
     expect(screen.getByLabelText(/quick add a transaction/i)).toBeInTheDocument()
     expect(screen.getByText(/net worth/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/your journey/i)).toBeInTheDocument()
     expect(screen.getByText(/financial health/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/key metrics/i)).toBeInTheDocument()
+  })
+
+  it('greets in the sticky header, and does not repeat it on the page', async () => {
+    const meta = routeMetaFor('/app/dashboard', undefined, 'Lakshay Sharma')
+    expect(meta?.title).toBe('Welcome back, ')
+    /* First word only, and it is the fragment the header paints in the accent. */
+    expect(meta?.accent).toBe('Lakshay')
+    expect(meta?.titleTail).toBe('')
+
+    await renderDashboard()
+    // One heading per screen: the greeting is the header's, not the body's.
+    expect(screen.queryByText(/welcome/i)).not.toBeInTheDocument()
   })
 
   it('shows the seeded household as a loss, in Indian units', async () => {

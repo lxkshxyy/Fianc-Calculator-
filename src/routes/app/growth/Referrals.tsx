@@ -60,7 +60,7 @@ export function Referrals() {
     >
       <ModuleSection label="Your link">
         <Card>
-          <p className="break-all rounded-tile bg-surface-2 p-3 font-mono text-caption text-text-2">
+          <p className="rounded-tile bg-surface-2 text-caption text-text-2 p-3 font-mono break-all">
             {link}
           </p>
           <div className="mt-3">
@@ -69,7 +69,11 @@ export function Referrals() {
                 void copy()
               }}
             >
-              {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
+              {copied ? (
+                <Check aria-hidden className="size-4" />
+              ) : (
+                <Copy aria-hidden className="size-4" />
+              )}
               {copied ? 'Copied' : 'Copy link'}
             </AppButton>
           </div>

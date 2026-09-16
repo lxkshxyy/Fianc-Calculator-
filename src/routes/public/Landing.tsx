@@ -26,12 +26,36 @@ import { PublicShell } from './PublicShell'
 const GOAL = STAGES[STAGES.length - 1]?.bandFrom ?? 10_000_000
 
 const TOOLS: { icon: LucideIcon; title: string; line: string }[] = [
-  { icon: Wallet, title: 'Budget tracking', line: 'Every rupee, categorised, with recurring payments spotted for you.' },
-  { icon: TrendingUp, title: 'Investment view', line: 'What you hold, what it returned, and what the fees quietly cost.' },
-  { icon: Target, title: 'Goal planning', line: 'Name a target and see the monthly figure that actually gets you there.' },
-  { icon: Receipt, title: 'Tax planning', line: 'Both regimes side by side, and what you have already claimed.' },
-  { icon: Shield, title: 'Insurance gaps', line: 'What your family would have, against what they would need.' },
-  { icon: CreditCard, title: 'EMI & credit', line: 'What each loan really costs, and what paying early would save.' },
+  {
+    icon: Wallet,
+    title: 'Budget tracking',
+    line: 'Every rupee, categorised, with recurring payments spotted for you.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Investment view',
+    line: 'What you hold, what it returned, and what the fees quietly cost.',
+  },
+  {
+    icon: Target,
+    title: 'Goal planning',
+    line: 'Name a target and see the monthly figure that actually gets you there.',
+  },
+  {
+    icon: Receipt,
+    title: 'Tax planning',
+    line: 'Both regimes side by side, and what you have already claimed.',
+  },
+  {
+    icon: Shield,
+    title: 'Insurance gaps',
+    line: 'What your family would have, against what they would need.',
+  },
+  {
+    icon: CreditCard,
+    title: 'EMI & credit',
+    line: 'What each loan really costs, and what paying early would save.',
+  },
 ]
 
 const STEPS = [
@@ -41,12 +65,28 @@ const STEPS = [
 ]
 
 const DIFFERENTIATORS: { icon: LucideIcon; title: string; line: string }[] = [
-  { icon: LayoutDashboard, title: 'No spreadsheets', line: 'A ladder you climb, not a grid you maintain.' },
+  {
+    icon: LayoutDashboard,
+    title: 'No spreadsheets',
+    line: 'A ladder you climb, not a grid you maintain.',
+  },
   { icon: Languages, title: 'Hindi or English', line: 'Read it in whichever you think in.' },
   { icon: Sparkles, title: 'Type it like you say it', line: '"paid 15k rent" is a valid entry.' },
-  { icon: GraduationCap, title: 'Learning that fits', line: 'Short modules tied to the stage you are on.' },
-  { icon: Bot, title: 'Works offline', line: 'Your figures stay on your device. Nothing is uploaded.' },
-  { icon: Users, title: 'Built for a household', line: 'Cover and goals account for the people who depend on you.' },
+  {
+    icon: GraduationCap,
+    title: 'Learning that fits',
+    line: 'Short modules tied to the stage you are on.',
+  },
+  {
+    icon: Bot,
+    title: 'Works offline',
+    line: 'Your figures stay on your device. Nothing is uploaded.',
+  },
+  {
+    icon: Users,
+    title: 'Built for a household',
+    line: 'Cover and goals account for the people who depend on you.',
+  },
 ]
 
 const FAQS = [
@@ -84,15 +124,15 @@ export function Landing() {
     <PublicShell>
       {/* Hero */}
       <section className="py-14 sm:py-20">
-        <p className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-caption text-text-2">
-          <Sparkles aria-hidden className="size-3.5 text-gold" />
+        <p className="border-border text-caption text-text-2 inline-flex items-center gap-2 rounded-full border px-3 py-1">
+          <Sparkles aria-hidden className="text-gold size-3.5" />
           Free to start · no card
         </p>
-        <h1 className="mt-5 max-w-3xl text-balance font-semibold text-[clamp(2rem,6vw,3.25rem)] text-text leading-[1.05] tracking-tight">
+        <h1 className="text-text mt-5 max-w-3xl text-[clamp(2rem,6vw,3.25rem)] leading-[1.05] font-semibold tracking-tight text-balance">
           Your path to <span className="text-gold">{formatCompact(GOAL)}</span> starts with knowing
           where you stand today
         </h1>
-        <p className="mt-5 max-w-xl text-lead text-text-2">
+        <p className="text-lead text-text-2 mt-5 max-w-xl">
           Six stages, one step at a time. No spreadsheets, no jargon — just the next thing worth
           doing with your money.
         </p>
@@ -115,9 +155,9 @@ export function Landing() {
           {STEPS.map((step, index) => (
             <li key={step.title}>
               <Card className="h-full">
-                <span className="font-mono text-caption text-gold">{index + 1}</span>
-                <h3 className="mt-2 font-semibold text-text">{step.title}</h3>
-                <p className="mt-1.5 text-sm text-text-2">{step.line}</p>
+                <span className="text-caption text-gold font-mono">{index + 1}</span>
+                <h3 className="text-text mt-2 font-semibold">{step.title}</h3>
+                <p className="text-text-2 mt-1.5 text-sm">{step.line}</p>
               </Card>
             </li>
           ))}
@@ -130,13 +170,13 @@ export function Landing() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((tool) => (
             <Card key={tool.title} className="h-full">
-              <tool.icon aria-hidden className="size-5 text-gold" />
-              <h3 className="mt-3 font-semibold text-text">{tool.title}</h3>
-              <p className="mt-1.5 text-sm text-text-2">{tool.line}</p>
+              <tool.icon aria-hidden className="text-gold size-5" />
+              <h3 className="text-text mt-3 font-semibold">{tool.title}</h3>
+              <p className="text-text-2 mt-1.5 text-sm">{tool.line}</p>
             </Card>
           ))}
         </div>
-        <p className="mt-4 text-caption text-text-3">
+        <p className="text-caption text-text-3 mt-4">
           <Link to="/features" className="rounded-tile text-gold underline underline-offset-2">
             See every feature
           </Link>
@@ -156,21 +196,18 @@ export function Landing() {
           {STAGES.map((stage, index) => (
             <li key={stage.id} className="relative flex gap-4 pb-6 last:pb-0">
               {index < STAGES.length - 1 ? (
-                <span
-                  aria-hidden
-                  className="absolute top-10 bottom-0 left-[19px] w-px bg-border"
-                />
+                <span aria-hidden className="bg-border absolute top-10 bottom-0 left-[19px] w-px" />
               ) : null}
-              <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface">
-                <stage.icon aria-hidden className="size-4 text-gold" />
+              <span className="border-border bg-surface relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full border">
+                <stage.icon aria-hidden className="text-gold size-4" />
               </span>
               <div className="min-w-0 flex-1 pt-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold text-text">{stage.name}</h3>
+                  <h3 className="text-text font-semibold">{stage.name}</h3>
                   {stage.tier === 'diamond' ? <TierBadge tier="diamond" /> : null}
                 </div>
-                <p className="mt-0.5 text-sm text-text-2">{stage.tagline}</p>
-                <p className="mt-1 font-mono text-caption text-text-3 tabular-nums">
+                <p className="text-text-2 mt-0.5 text-sm">{stage.tagline}</p>
+                <p className="text-caption text-text-3 mt-1 font-mono tabular-nums">
                   {bandLabel(stage.bandFrom, stage.bandTo)}
                 </p>
               </div>
@@ -185,9 +222,9 @@ export function Landing() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {DIFFERENTIATORS.map((item) => (
             <Card key={item.title} className="h-full">
-              <item.icon aria-hidden className="size-4 text-text-2" />
-              <h3 className="mt-3 font-medium text-sm text-text">{item.title}</h3>
-              <p className="mt-1 text-caption text-text-2">{item.line}</p>
+              <item.icon aria-hidden className="text-text-2 size-4" />
+              <h3 className="text-text mt-3 text-sm font-medium">{item.title}</h3>
+              <p className="text-caption text-text-2 mt-1">{item.line}</p>
             </Card>
           ))}
         </div>
@@ -198,11 +235,13 @@ export function Landing() {
         <SectionLabel>Membership</SectionLabel>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Card>
-            <h3 className="font-semibold text-text text-title">Silver</h3>
-            <p className="mt-1 text-sm text-text-2">Free, and it stays free.</p>
-            <p className="mt-4 text-caption text-text-label uppercase tracking-[0.1em]">Opens</p>
-            <p className="mt-1 text-sm text-text">
-              {STAGES.filter((stage) => stage.tier === 'silver').map((stage) => stage.name).join(' · ')}
+            <h3 className="text-text text-title font-semibold">Silver</h3>
+            <p className="text-text-2 mt-1 text-sm">Free, and it stays free.</p>
+            <p className="text-caption text-text-label mt-4 tracking-[0.1em] uppercase">Opens</p>
+            <p className="text-text mt-1 text-sm">
+              {STAGES.filter((stage) => stage.tier === 'silver')
+                .map((stage) => stage.name)
+                .join(' · ')}
             </p>
             <div className="mt-5">
               <Link to="/auth?mode=signup">
@@ -215,23 +254,25 @@ export function Landing() {
 
           <Card className="border-gold-dim">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold text-text text-title">Diamond</h3>
-              <span className="rounded-full bg-gold px-2 py-0.5 font-medium text-caption text-on-gold">
+              <h3 className="text-text text-title font-semibold">Diamond</h3>
+              <span className="bg-gold text-caption text-on-gold rounded-full px-2 py-0.5 font-medium">
                 Recommended
               </span>
             </div>
-            <p className="mt-1 text-sm text-text-2">The full ladder, and a person to ask.</p>
-            <p className="mt-4 text-caption text-text-label uppercase tracking-[0.1em]">Opens</p>
-            <p className="mt-1 text-sm text-text">
+            <p className="text-text-2 mt-1 text-sm">The full ladder, and a person to ask.</p>
+            <p className="text-caption text-text-label mt-4 tracking-[0.1em] uppercase">Opens</p>
+            <p className="text-text mt-1 text-sm">
               Everything in Silver, plus{' '}
-              {STAGES.filter((stage) => stage.tier === 'diamond').map((stage) => stage.name).join(' · ')}
+              {STAGES.filter((stage) => stage.tier === 'diamond')
+                .map((stage) => stage.name)
+                .join(' · ')}
             </p>
             <div className="mt-5">
               <Link to="/auth?mode=signup">
                 <AppButton block>Start free, upgrade later</AppButton>
               </Link>
             </div>
-            <p className="mt-3 text-caption text-text-3">
+            <p className="text-caption text-text-3 mt-3">
               Pricing is set by the advisory team and is not published here yet.
             </p>
           </Card>
@@ -242,11 +283,11 @@ export function Landing() {
       <section className="py-10" aria-label="Member results">
         <SectionLabel>Member results</SectionLabel>
         <Card className="mt-4">
-          <p className="text-sm text-text-2">
+          <p className="text-text-2 text-sm">
             Testimonials go here once real members have given them, with their consent and their own
             figures.
           </p>
-          <p className="mt-2 text-caption text-text-3">
+          <p className="text-caption text-text-3 mt-2">
             This space is intentionally empty. Invented quotes and made-up savings figures are not
             something this build will ship, and a reader can usually tell anyway.
           </p>
@@ -256,13 +297,13 @@ export function Landing() {
       {/* FAQ */}
       <section id="faq" className="scroll-mt-20 py-10" aria-label="Questions">
         <SectionLabel>Questions</SectionLabel>
-        <div className="mt-4 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+        <div className="divide-border rounded-card border-border bg-surface mt-4 divide-y overflow-hidden border">
           {FAQS.map((faq, index) => (
             <details key={faq.q} open={index === 0} className="group">
-              <summary className="cursor-pointer list-none px-4 py-4 font-medium text-sm text-text marker:hidden hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:-outline-offset-2">
+              <summary className="text-text hover:bg-surface-2 focus-visible:outline-text-2 cursor-pointer list-none px-4 py-4 text-sm font-medium marker:hidden focus-visible:outline-2 focus-visible:-outline-offset-2">
                 {faq.q}
               </summary>
-              <p className="px-4 pb-4 text-sm text-text-2">{faq.a}</p>
+              <p className="text-text-2 px-4 pb-4 text-sm">{faq.a}</p>
             </details>
           ))}
         </div>
@@ -271,10 +312,10 @@ export function Landing() {
       {/* Closing CTA */}
       <section className="py-10">
         <Card className="text-center">
-          <h2 className="text-balance font-semibold text-text text-title">
+          <h2 className="text-text text-title font-semibold text-balance">
             Start with the first stage
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-text-2">
+          <p className="text-text-2 mx-auto mt-2 max-w-md text-sm">
             Knowing where you stand takes about ten minutes and costs nothing.
           </p>
           <div className="mt-5 flex justify-center">

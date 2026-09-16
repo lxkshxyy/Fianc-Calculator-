@@ -33,8 +33,12 @@ export function GroupIndex() {
   }
 
   return (
-    <ModuleScreen title={group.label} subtitle={`Everything under ${group.label.toLowerCase()}.`} icon={group.icon}>
-      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+    <ModuleScreen
+      title={group.label}
+      subtitle={`Everything under ${group.label.toLowerCase()}.`}
+      icon={group.icon}
+    >
+      <ul className="divide-border rounded-card border-border bg-surface divide-y overflow-hidden border">
         {group.items.map((item) => {
           const required = moduleTier(item.path)
           const locked = required === 'diamond' && tier !== 'diamond'
@@ -43,12 +47,12 @@ export function GroupIndex() {
             <li key={item.path}>
               <Link
                 to={to}
-                className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:-outline-offset-2"
+                className="hover:bg-surface-2 focus-visible:outline-text-2 flex items-center gap-3 px-4 py-4 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
               >
-                <item.icon aria-hidden className="size-4 shrink-0 text-text-3" />
-                <span className="flex-1 text-sm text-text">{item.label}</span>
+                <item.icon aria-hidden className="text-text-3 size-4 shrink-0" />
+                <span className="text-text flex-1 text-sm">{item.label}</span>
                 {locked ? <TierBadge tier="diamond" /> : null}
-                <ChevronRight aria-hidden className="size-4 shrink-0 text-text-3" />
+                <ChevronRight aria-hidden className="text-text-3 size-4 shrink-0" />
               </Link>
             </li>
           )

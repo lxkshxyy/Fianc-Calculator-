@@ -45,17 +45,17 @@ export function RouteErrorBoundary({ standalone = false }: { standalone?: boolea
     <Card>
       <SectionLabel>Error</SectionLabel>
       <div className="mt-3 flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-danger/10 text-danger">
+        <span className="rounded-tile bg-danger/10 text-danger flex size-9 shrink-0 items-center justify-center">
           <AlertTriangle aria-hidden className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-title font-semibold text-text">This screen could not load</h2>
-          <p className="mt-1 text-meta text-text-2">
+          <h2 className="text-title text-text font-semibold">This screen could not load</h2>
+          <p className="text-meta text-text-2 mt-1">
             {standalone
               ? 'Head back to the dashboard and try again from there.'
               : 'The rest of the app is still working — use the navigation to go somewhere else.'}
           </p>
-          <pre className="mt-3 max-h-28 overflow-auto rounded-tile bg-surface-2 p-3 text-caption text-text-2">
+          <pre className="rounded-tile bg-surface-2 text-caption text-text-2 mt-3 max-h-28 overflow-auto p-3">
             {message}
           </pre>
           <div className="mt-4 flex gap-2">
@@ -86,7 +86,7 @@ export function RouteErrorBoundary({ standalone = false }: { standalone?: boolea
   /* Outside AppLayout there is no shell to sit inside, so it centres itself. */
   if (standalone) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg px-4 py-16">
+      <div className="bg-bg flex min-h-dvh items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">{card}</div>
       </div>
     )

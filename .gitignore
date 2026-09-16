@@ -8,3 +8,6 @@ coverage
 .env.*
 !.env.example
 .vite
+
+# Files Claude could not delete directly — safe to remove by hand at any time.
+_to_delete/

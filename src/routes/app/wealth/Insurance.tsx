@@ -55,19 +55,19 @@ export function Insurance() {
       <ModuleSection label="Cover gap">
         <Card>
           {annualIncome === 0 ? (
-            <p className="text-sm text-text-2">
+            <p className="text-text-2 text-sm">
               Add your income first — the recommended cover is a multiple of it, so there is nothing
               to compare against yet.
             </p>
           ) : (
             <>
-              <p className="text-sm text-text-2">
+              <p className="text-text-2 text-sm">
                 A common rule of thumb is term cover worth {TERM_COVER_MULTIPLE} years of income.
               </p>
               <div className="mt-3">
                 <Meter value={coverage ?? 0} tone={gap > 0 ? 'danger' : 'success'} />
               </div>
-              <p className="mt-3 text-sm text-text">
+              <p className="text-text mt-3 text-sm">
                 {gap > 0 ? (
                   <>
                     Short by <CurrencyText value={gap} size="lead" tone="inherit" />.
@@ -77,11 +77,11 @@ export function Insurance() {
                 )}
               </p>
               {hasHealth ? null : (
-                <p className="mt-2 flex items-center gap-2 text-caption text-warn">
+                <p className="text-caption text-warn mt-2 flex items-center gap-2">
                   <ShieldAlert aria-hidden className="size-4" /> No health policy recorded.
                 </p>
               )}
-              <p className="mt-3 text-caption text-text-3">
+              <p className="text-caption text-text-3 mt-3">
                 A rule of thumb is not advice. What you need depends on your dependants, debts and
                 existing cover — talk to a licensed advisor before buying.
               </p>

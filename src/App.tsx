@@ -2,6 +2,7 @@ import { RouterProvider } from 'react-router-dom'
 
 import { RootErrorBoundary } from '@/app/RootErrorBoundary'
 import { router } from '@/app/router'
+import { applyDensity } from '@/config/density'
 import { applyTheme, readStoredTheme } from '@/lib/theme'
 
 /*
@@ -11,6 +12,7 @@ import { applyTheme, readStoredTheme } from '@/lib/theme'
  * media query in charge (§4.1).
  */
 applyTheme(readStoredTheme())
+applyDensity()
 
 export function App() {
   return (

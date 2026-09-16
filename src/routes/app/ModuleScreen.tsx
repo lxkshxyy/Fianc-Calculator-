@@ -42,15 +42,15 @@ export function ModuleScreen({
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {Icon === undefined ? null : (
-            <span className="mt-1 rounded-tile bg-surface-2 p-2">
-              <Icon aria-hidden className="size-5 text-gold" />
+            <span className="rounded-tile bg-surface-2 mt-1 p-2">
+              <Icon aria-hidden className="text-gold size-5" />
             </span>
           )}
           <div>
-            <h1 className="text-balance font-semibold text-page text-text tracking-tight">
+            <h1 className="text-page text-text font-semibold tracking-tight text-balance">
               {title}
             </h1>
-            <p className="mt-1 max-w-prose text-sm text-text-2">{subtitle}</p>
+            <p className="text-text-2 mt-1 max-w-prose text-sm">{subtitle}</p>
           </div>
         </div>
         {action}

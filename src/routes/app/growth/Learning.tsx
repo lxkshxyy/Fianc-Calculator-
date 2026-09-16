@@ -40,7 +40,9 @@ export function Learning() {
                 icon: module.completed ? PlayCircle : GraduationCap,
                 title: module.title,
                 subtitle: `${String(module.durationMinutes)} min${module.completed ? ' · done' : ''}`,
-                footer: <Meter value={module.progress} tone={module.completed ? 'success' : 'gold'} />,
+                footer: (
+                  <Meter value={module.progress} tone={module.completed ? 'success' : 'gold'} />
+                ),
               }))}
               empty={{ icon: GraduationCap, title: '', description: '' }}
             />

@@ -1,4 +1,4 @@
-# ProsperityPath — native Android app
+# Wealth Rebuild Circle — native Android app
 
 The app is now an Android application. Same screens, same code, same 283 tests —
 what changed is the shell it runs in. Instead of a browser tab it is a real

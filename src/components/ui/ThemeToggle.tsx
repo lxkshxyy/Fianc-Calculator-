@@ -10,49 +10,52 @@ const ICONS: Record<ThemePreference, LucideIcon> = {
   system: Monitor,
 }
 
+const NEXT_LABEL: Record<ThemePreference, string> = {
+  light: 'dark',
+  dark: 'system',
+  system: 'light',
+}
+
 /**
- * §5.1 — "Top: wordmark + theme toggle."
+ * §5.1 — one button, not three.
  *
- * Three states, not two: `system` stamps nothing and leaves prefers-color-scheme
- * in charge (§4.1). One implementation, used by the sidebar, the More sheet and
- * the kitchen sink, so the three cannot drift.
+ * It used to be a segmented control of three 44px buttons, which took a whole
+ * row of a 260px sidebar to expose a setting people touch once. Now it shows
+ * the theme you are on and cycles light → dark → system on click.
  *
- * §10.8 — every segment is a full 44x44, with no smaller variant. `lg:` starts at
- * 1024px, which includes iPad Pro portrait, so the sidebar is a touch surface too
- * and a 32px segment there would be a real miss, not a pedantic one.
- * §2.1.10 — real buttons with `aria-pressed`, keyboard-reachable and announced.
+ * Nothing about the three states changed: `system` still stamps nothing and
+ * leaves prefers-color-scheme in charge (§4.1). This is one implementation used
+ * by the sidebar, the More sheet and the public header, so they cannot drift.
+ *
+ * §10.8 — still a full 44x44 touch target; `lg:` starts at 1024px, which takes
+ * in iPad Pro portrait, so the sidebar is a touch surface too.
+ * §2.1.10 — a real button, keyboard-reachable, and the label says what pressing
+ * it will do rather than only what is currently on.
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const { preference, setPreference } = useTheme()
+  const Icon = ICONS[preference]
+
+  const next =
+    THEME_PREFERENCES[(THEME_PREFERENCES.indexOf(preference) + 1) % THEME_PREFERENCES.length] ??
+    'light'
 
   return (
-    <div
-      role="group"
-      aria-label="Theme"
-      className={cn('inline-flex gap-0.5 rounded-button bg-surface-2 p-0.5', className)}
+    <button
+      type="button"
+      aria-label={`Theme: ${preference}. Switch to ${NEXT_LABEL[preference]}.`}
+      title={`Theme: ${preference} — click for ${NEXT_LABEL[preference]}`}
+      onClick={() => {
+        setPreference(next)
+      }}
+      className={cn(
+        'rounded-button inline-flex size-11 shrink-0 items-center justify-center',
+        'bg-surface-2 text-text-2 transition-colors duration-150',
+        'hover:text-accent focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2',
+        className,
+      )}
     >
-      {THEME_PREFERENCES.map((option) => {
-        const Icon = ICONS[option]
-        const isActive = preference === option
-        return (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={isActive}
-            aria-label={option}
-            title={option}
-            onClick={() => {
-              setPreference(option)
-            }}
-            className={cn(
-              'inline-flex size-11 items-center justify-center rounded-[8px] transition-colors duration-150',
-              isActive ? 'bg-surface text-gold' : 'text-text-2 hover:text-text',
-            )}
-          >
-            <Icon aria-hidden className="size-4" />
-          </button>
-        )
-      })}
-    </div>
+      <Icon aria-hidden className="size-4" />
+    </button>
   )
 }

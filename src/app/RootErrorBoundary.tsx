@@ -31,16 +31,16 @@ export class RootErrorBoundary extends Component<Props, State> {
     if (error === null) return this.props.children
 
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg px-4 py-16">
-        <div className="w-full max-w-md rounded-card border border-border bg-surface p-5">
-          <span className="flex size-11 items-center justify-center rounded-pill bg-danger/10 text-danger">
+      <div className="bg-bg flex min-h-dvh items-center justify-center px-4 py-16">
+        <div className="rounded-card border-border bg-surface w-full max-w-md border p-5">
+          <span className="rounded-pill bg-danger/10 text-danger flex size-11 items-center justify-center">
             <AlertTriangle aria-hidden className="size-5" />
           </span>
-          <h1 className="mt-4 text-title font-semibold text-text">Something broke</h1>
-          <p className="mt-2 text-meta text-text-2">
+          <h1 className="text-title text-text mt-4 font-semibold">Something broke</h1>
+          <p className="text-meta text-text-2 mt-2">
             The app hit an error it could not recover from. Your data is still on this device.
           </p>
-          <pre className="mt-3 max-h-32 overflow-auto rounded-tile bg-surface-2 p-3 text-caption text-text-2">
+          <pre className="rounded-tile bg-surface-2 text-caption text-text-2 mt-3 max-h-32 overflow-auto p-3">
             {error.message}
           </pre>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">

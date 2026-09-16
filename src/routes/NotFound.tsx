@@ -8,7 +8,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel'
 /** §6 — the `*` route. A real screen, not a bare string. */
 export function NotFound() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-bg px-4 py-16">
+    <div className="bg-bg flex min-h-dvh items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
         <SectionLabel>404</SectionLabel>
         <Card className="mt-3">
@@ -19,7 +19,7 @@ export function NotFound() {
             action={
               <Link
                 to="/app/dashboard"
-                className="inline-flex min-h-11 items-center rounded-button bg-gold px-4 text-meta font-medium text-on-gold transition-colors duration-150 hover:bg-gold-strong"
+                className="rounded-button bg-gold text-meta text-on-gold hover:bg-gold-strong inline-flex min-h-11 items-center px-4 font-medium transition-colors duration-150"
               >
                 Go to dashboard
               </Link>

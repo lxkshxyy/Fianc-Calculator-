@@ -5,7 +5,9 @@ import { useLocation } from 'react-router-dom'
 import { AppButton } from '@/components/ui/AppButton'
 import { TierBadge } from '@/components/ui/TierBadge'
 import { useProfile } from '@/data/store/data'
+import { useHtmlLang, useT } from '@/i18n'
 import { cn } from '@/lib/cn'
+import { BRAND } from '@/config/brand'
 import { routeMetaFor } from './navigation'
 
 /**
@@ -19,8 +21,13 @@ import { routeMetaFor } from './navigation'
  * §10.3 — top padding clears the notch via `env(safe-area-inset-top)`.
  */
 export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
+  const t = useT()
   const location = useLocation()
-  const tier = useProfile()?.tier ?? 'silver'
+  const profile = useProfile()
+  const tier = profile?.tier ?? 'silver'
+
+  /* One place stamps <html lang>, and the header is on every private screen. */
+  useHtmlLang()
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -40,14 +47,14 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
     }
   }, [])
 
-  const meta = routeMetaFor(location.pathname)
-  const title = meta?.title ?? 'ProsperityPath'
+  const meta = routeMetaFor(location.pathname, t, profile?.displayName)
+  const title = meta?.title ?? BRAND.full
   const subtitle = meta?.subtitle ?? ''
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 border-b border-border bg-bg-elevated/95 backdrop-blur',
+        'border-border bg-bg-elevated/95 sticky top-0 z-30 border-b backdrop-blur',
         'pt-[env(safe-area-inset-top)]',
       )}
     >
@@ -60,7 +67,7 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
         <div className="min-w-0">
           <h1
             className={cn(
-              'truncate font-bold tracking-tight text-text transition-all duration-150',
+              'text-text truncate font-bold tracking-tight transition-all duration-150',
               /*
                * Was `text-title : text-title lg:text-page`, which collapsed only at
                * lg — the one breakpoint §5.3 does not ask for — and never on mobile,
@@ -70,9 +77,11 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
             )}
           >
             {title}
+            {meta?.accent === undefined ? null : <span className="text-accent">{meta.accent}</span>}
+            {meta?.titleTail}
           </h1>
           {subtitle === '' || collapsed ? null : (
-            <p className="hidden truncate text-meta text-text-2 lg:block">{subtitle}</p>
+            <p className="text-meta text-text-2 hidden truncate lg:block">{subtitle}</p>
           )}
         </div>
 
@@ -81,7 +90,7 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
           <AppButton
             variant="ghost"
             size="icon"
-            aria-label="More"
+            aria-label={t('header.openMore')}
             className="lg:hidden"
             onClick={onOpenMore}
           >

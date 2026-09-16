@@ -20,12 +20,20 @@ const BULLETS: Record<string, string[]> = {
   budget: ['Twelve categories', 'Spent against limit', 'Recurring payments detected'],
   'emi-credit': ['Real remaining interest', 'Prepayment calculator', 'Credit score history'],
   tax: ['Both regimes compared', 'Deduction tracker', 'Rates dated and sourced'],
-  investments: ['Annualised return from real dates', 'Allocation by type', 'Expense ratios flagged'],
+  investments: [
+    'Annualised return from real dates',
+    'Allocation by type',
+    'Expense ratios flagged',
+  ],
   goals: ['Monthly figure to hit the date', 'Milestone chips', 'Progress ring'],
   assets: ['What you own', 'What you can reach today', 'Nominee gaps'],
   insurance: ['Cover-gap analysis', 'Renewal calendar', 'Premium totals'],
   learning: ['Tied to your stage', 'Short modules', 'Progress kept'],
-  'morning-club': ['Daily check-in', 'Streak that survives a missed morning', 'One line to think about'],
+  'morning-club': [
+    'Daily check-in',
+    'Streak that survives a missed morning',
+    'One line to think about',
+  ],
   achievements: ['Earned and pending', 'Progress to the next one', 'No vanity badges'],
   referrals: ['Your own link', 'Who joined', 'Rewards earned'],
   assistant: ['Answers from your own figures', 'Works offline', 'Never invents a number'],
@@ -48,17 +56,18 @@ export function Features() {
 
   const total = NAV_GROUPS.reduce((count, group) => count + group.items.length, 0)
   const diamondCount = NAV_GROUPS.reduce(
-    (count, group) => count + group.items.filter((item) => moduleTier(item.path) === 'diamond').length,
+    (count, group) =>
+      count + group.items.filter((item) => moduleTier(item.path) === 'diamond').length,
     0,
   )
 
   return (
     <PublicShell>
       <section className="py-12">
-        <h1 className="text-balance font-semibold text-[clamp(1.75rem,5vw,2.5rem)] text-text tracking-tight">
+        <h1 className="text-text text-[clamp(1.75rem,5vw,2.5rem)] font-semibold tracking-tight text-balance">
           Every feature, in one place
         </h1>
-        <p className="mt-3 text-lead text-text-2">
+        <p className="text-lead text-text-2 mt-3">
           {total} tools across five areas · {diamondCount} open on Diamond
         </p>
 
@@ -73,8 +82,8 @@ export function Features() {
               aria-pressed={filter === option}
               className={
                 filter === option
-                  ? 'rounded-full bg-gold px-3 py-1.5 font-medium text-on-gold text-sm capitalize'
-                  : 'rounded-full border border-border px-3 py-1.5 text-sm text-text-2 capitalize hover:border-border-strong'
+                  ? 'bg-gold text-on-gold rounded-full px-3 py-1.5 text-sm font-medium capitalize'
+                  : 'border-border text-text-2 hover:border-border-strong rounded-full border px-3 py-1.5 text-sm capitalize'
               }
             >
               {option}
@@ -92,14 +101,14 @@ export function Features() {
               return (
                 <Card key={item.path} className="h-full">
                   <div className="flex items-start justify-between gap-2">
-                    <item.icon aria-hidden className="size-5 text-gold" />
+                    <item.icon aria-hidden className="text-gold size-5" />
                     {tier === 'diamond' ? <TierBadge tier="diamond" /> : null}
                   </div>
-                  <h3 className="mt-3 font-semibold text-text">{item.label}</h3>
+                  <h3 className="text-text mt-3 font-semibold">{item.label}</h3>
                   <ul className="mt-3 space-y-1.5">
                     {(BULLETS[item.path] ?? []).map((bullet) => (
-                      <li key={bullet} className="flex items-start gap-2 text-caption text-text-2">
-                        <Check aria-hidden className="mt-0.5 size-3.5 shrink-0 text-success" />
+                      <li key={bullet} className="text-caption text-text-2 flex items-start gap-2">
+                        <Check aria-hidden className="text-success mt-0.5 size-3.5 shrink-0" />
                         {bullet}
                       </li>
                     ))}

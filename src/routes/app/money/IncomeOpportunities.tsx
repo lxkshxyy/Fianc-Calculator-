@@ -9,11 +9,36 @@ import { ModuleScreen, ModuleSection } from '../ModuleScreen'
  * to serve a list of suggestions.
  */
 const IDEAS: { id: string; title: string; effort: string; horizon: string }[] = [
-  { id: 'freelance', title: 'Freelance your day-job skill', effort: 'High effort', horizon: 'Weeks to first rupee' },
-  { id: 'tutoring', title: 'Tutor a subject you already know', effort: 'Medium effort', horizon: 'Days to first rupee' },
-  { id: 'rent-asset', title: 'Rent out something you already own', effort: 'Low effort', horizon: 'Weeks' },
-  { id: 'content', title: 'Build an audience around one narrow topic', effort: 'High effort', horizon: 'Months' },
-  { id: 'deposits', title: 'Move idle cash into a higher-interest deposit', effort: 'Low effort', horizon: 'Immediate' },
+  {
+    id: 'freelance',
+    title: 'Freelance your day-job skill',
+    effort: 'High effort',
+    horizon: 'Weeks to first rupee',
+  },
+  {
+    id: 'tutoring',
+    title: 'Tutor a subject you already know',
+    effort: 'Medium effort',
+    horizon: 'Days to first rupee',
+  },
+  {
+    id: 'rent-asset',
+    title: 'Rent out something you already own',
+    effort: 'Low effort',
+    horizon: 'Weeks',
+  },
+  {
+    id: 'content',
+    title: 'Build an audience around one narrow topic',
+    effort: 'High effort',
+    horizon: 'Months',
+  },
+  {
+    id: 'deposits',
+    title: 'Move idle cash into a higher-interest deposit',
+    effort: 'Low effort',
+    horizon: 'Immediate',
+  },
 ]
 
 export function IncomeOpportunities() {

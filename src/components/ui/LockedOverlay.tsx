@@ -38,15 +38,15 @@ export function LockedOverlay({
   }, [])
 
   return (
-    <div className={cn('relative overflow-hidden rounded-card', className)}>
+    <div className={cn('rounded-card relative overflow-hidden', className)}>
       <div ref={previewRef} aria-hidden className="pointer-events-none blur-[6px] select-none">
         {children}
       </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-card bg-bg/70 p-6 text-center">
-        <span className="flex size-11 items-center justify-center rounded-pill border border-gold-dim bg-gold/10 text-gold">
+      <div className="rounded-card bg-bg/70 absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <span className="rounded-pill border-gold-dim bg-gold/10 text-gold flex size-11 items-center justify-center border">
           <Lock aria-hidden className="size-5" />
         </span>
-        <p className="max-w-xs text-body font-medium text-text">
+        <p className="text-body text-text max-w-xs font-medium">
           Upgrade to Diamond to unlock {unlocks}.
         </p>
         <AppButton variant="primary" size="sm" onClick={onUpgrade}>

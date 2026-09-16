@@ -36,16 +36,16 @@ export function Tax() {
       {configured ? null : (
         <Card>
           <div className="flex items-start gap-3">
-            <ShieldAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-warn" />
+            <ShieldAlert aria-hidden className="text-warn mt-0.5 size-5 shrink-0" />
             <div>
-              <h2 className="font-semibold text-text">Tax rates are not configured</h2>
-              <p className="mt-1.5 max-w-prose text-sm text-text-2">
+              <h2 className="text-text font-semibold">Tax rates are not configured</h2>
+              <p className="text-text-2 mt-1.5 max-w-prose text-sm">
                 Slabs, the standard deduction, the rebate and cess change at every Budget, so this
                 app ships with none of them filled in. Add the figures for the assessment year from
                 an official source in <code className="text-text-2">src/domain/taxConfig.ts</code>,
                 and the comparison below starts working.
               </p>
-              <p className="mt-2 text-caption text-text-3">
+              <p className="text-caption text-text-3 mt-2">
                 Nothing here estimates your liability until then — a wrong slab is worse than no
                 answer.
               </p>
@@ -56,9 +56,9 @@ export function Tax() {
 
       <ModuleSection label="Regime">
         <Card>
-          <p className="text-sm text-text-2">
+          <p className="text-text-2 text-sm">
             Currently set to{' '}
-            <span className="font-medium text-text">
+            <span className="text-text font-medium">
               {snapshot.taxProfile.regime === 'new' ? 'the new regime' : 'the old regime'}
             </span>
             . Deductions below apply only under the old regime.
@@ -82,7 +82,7 @@ export function Tax() {
           }}
         />
         {byDeduction.size === 0 ? null : (
-          <p className="mt-3 text-caption text-text-3">
+          <p className="text-caption text-text-3 mt-3">
             Headroom needs the section limits, which come with the rate config.
           </p>
         )}

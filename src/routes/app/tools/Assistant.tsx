@@ -45,7 +45,7 @@ function AssistantChat({ derived }: { derived: Derived }) {
       <Card>
         <div className="space-y-3">
           {turns.length === 0 ? (
-            <div className="text-sm text-text-2">
+            <div className="text-text-2 text-sm">
               <p>Try one of these:</p>
               <ul className="mt-2 space-y-1.5">
                 {['What is my net worth?', 'How much am I saving?', 'What should I fix first?'].map(
@@ -56,7 +56,7 @@ function AssistantChat({ derived }: { derived: Derived }) {
                         onClick={() => {
                           setText(example)
                         }}
-                        className="rounded-tile text-gold underline underline-offset-2 hover:text-gold-strong"
+                        className="rounded-tile text-gold hover:text-gold-strong underline underline-offset-2"
                       >
                         {example}
                       </button>
@@ -71,8 +71,8 @@ function AssistantChat({ derived }: { derived: Derived }) {
                 key={`${turn.role}-${String(index)}`}
                 className={
                   turn.role === 'user'
-                    ? 'ml-auto max-w-[85%] rounded-tile bg-gold-dim px-3 py-2 text-sm text-text'
-                    : 'max-w-[85%] rounded-tile bg-surface-2 px-3 py-2 text-sm text-text-2'
+                    ? 'rounded-tile bg-gold-dim text-text ml-auto max-w-[85%] px-3 py-2 text-sm'
+                    : 'rounded-tile bg-surface-2 text-text-2 max-w-[85%] px-3 py-2 text-sm'
                 }
               >
                 {turn.body}
@@ -96,7 +96,7 @@ function AssistantChat({ derived }: { derived: Derived }) {
             }}
             aria-label="Ask the assistant"
             placeholder="Ask about your money…"
-            className="h-11 flex-1 rounded-tile border border-border bg-surface px-3 text-sm text-text placeholder:text-text-3 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:outline-offset-2"
+            className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 h-11 flex-1 border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
           />
           <AppButton type="submit" disabled={text.trim().length === 0}>
             <Send aria-hidden className="size-4" />

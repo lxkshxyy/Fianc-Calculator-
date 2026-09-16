@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { PREVIEW_ALL } from '@/config/preview'
 import { APP_BASE } from '@/app/nav/navigation'
 import { SectionLabel } from '@/components/ui/SectionLabel'
+import { useReveal } from '@/lib/useReveal'
 import { StageCard } from '@/components/ui/StageCard'
 import type { Derived } from '@/domain/derive'
 import { STAGES, STAGE_COPY_PENDING, stageProgress, stageState } from '@/domain/journey'
@@ -27,8 +28,9 @@ function bandLabel(from: number | null, to: number | null): string {
 }
 
 export function JourneyRail({ derived, tier }: { derived: Derived; tier: Tier }) {
-  const railRef = useRef<HTMLDivElement>(null)
-  const currentRef = useRef<HTMLDivElement>(null)
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const revealRef = useReveal<HTMLDivElement>()
+  const currentRef = useRef<HTMLDivElement | null>(null)
   const currentStageId = derived.stage?.id ?? STAGES[0]?.id ?? ''
 
   /*
@@ -54,7 +56,10 @@ export function JourneyRail({ derived, tier }: { derived: Derived; tier: Tier })
       </div>
 
       <div
-        ref={railRef}
+        ref={(node) => {
+          railRef.current = node
+          revealRef.current = node
+        }}
         /*
          * pt-3 is load-bearing. The CURRENT badge is positioned at -top-2, so it
          * sits 8px above the card — and `overflow-x: auto` makes the browser clip
@@ -91,6 +96,7 @@ export function JourneyRail({ derived, tier }: { derived: Derived; tier: Tier })
                 to={target === undefined ? undefined : `${APP_BASE}/${target}`}
                 index={stage.index}
                 name={stage.name}
+                emoji={stage.emoji}
                 tagline={stage.tagline}
                 wealthBand={bandLabel(stage.bandFrom, stage.bandTo)}
                 icon={stage.icon}

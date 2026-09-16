@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { cn } from '@/lib/cn'
+import { useT } from '@/i18n'
 import { TABS, activeTabFor, type TabId } from './navigation'
 
 /**
@@ -15,6 +16,7 @@ import { TABS, activeTabFor, type TabId } from './navigation'
  * wide, clearing 44x44 at every supported width.
  */
 export function BottomTabs({ onOpenMore }: { onOpenMore: () => void }) {
+  const t = useT()
   const navigate = useNavigate()
   /* useLocation, not window.location — the latter does not re-render on navigation. */
   const location = useLocation()
@@ -24,7 +26,7 @@ export function BottomTabs({ onOpenMore }: { onOpenMore: () => void }) {
     <nav
       aria-label="Primary"
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg-elevated lg:hidden',
+        'border-border bg-bg-elevated fixed inset-x-0 bottom-0 z-40 border-t lg:hidden',
         'pb-[env(safe-area-inset-bottom)]',
       )}
     >
@@ -50,7 +52,7 @@ export function BottomTabs({ onOpenMore }: { onOpenMore: () => void }) {
                 )}
               >
                 <tab.icon aria-hidden className="size-5" />
-                <span className="text-micro leading-none">{tab.label}</span>
+                <span className="text-micro leading-none">{t(tab.labelKey)}</span>
               </button>
             </li>
           )

@@ -5,6 +5,7 @@ import { AppButton } from '@/components/ui/AppButton'
 import { Sheet } from '@/components/ui/Sheet'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useSession } from '@/data/store/session'
+import { useT } from '@/i18n'
 import { APP_BASE, NAV_GROUPS } from './navigation'
 
 /**
@@ -15,12 +16,18 @@ import { APP_BASE, NAV_GROUPS } from './navigation'
  * drift from the sidebar.
  */
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT()
   const navigate = useNavigate()
   const signOut = useSession((state) => state.signOut)
   const tools = NAV_GROUPS.find((group) => group.id === 'tools')
 
   return (
-    <Sheet open={open} onClose={onClose} title="More" description="Tools and settings">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t('more.title')}
+      description={t('more.description')}
+    >
       <ul className="space-y-2">
         {(tools?.items ?? []).map((item) => (
           <li key={item.path}>
@@ -30,14 +37,14 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
                 onClose()
                 void navigate(item.external === true ? item.path : APP_BASE + '/' + item.path)
               }}
-              className="flex min-h-11 w-full items-center gap-3 rounded-tile px-3 text-meta text-text transition-colors duration-150 hover:bg-surface-2"
+              className="rounded-tile text-meta text-text hover:bg-surface-2 flex min-h-11 w-full items-center gap-3 px-3 transition-colors duration-150"
             >
-              <item.icon aria-hidden className="size-4 shrink-0 text-text-2" />
-              <span className="flex-1 truncate text-left">{item.label}</span>
+              <item.icon aria-hidden className="text-text-2 size-4 shrink-0" />
+              <span className="flex-1 truncate text-left">{t(item.labelKey)}</span>
               {item.external === true ? (
-                <ExternalLink aria-label="(leaves the app)" className="size-3.5 text-text-3" />
+                <ExternalLink aria-label={t('header.leavesApp')} className="text-text-3 size-3.5" />
               ) : (
-                <ChevronRight aria-hidden className="size-3.5 text-text-3" />
+                <ChevronRight aria-hidden className="text-text-3 size-3.5" />
               )}
             </button>
           </li>
@@ -46,12 +53,12 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
 
       {/* The sidebar is lg-only (§5.2), so without this the theme cannot be
           changed from any private route on a phone. */}
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
-        <span className="text-meta font-medium text-text">Theme</span>
+      <div className="border-border mt-5 flex items-center justify-between gap-3 border-t pt-4">
+        <span className="text-meta text-text font-medium">{t('more.theme')}</span>
         <ThemeToggle />
       </div>
 
-      <div className="mt-4 border-t border-border pt-4">
+      <div className="border-border mt-4 border-t pt-4">
         <AppButton
           variant="danger"
           block
@@ -61,12 +68,8 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
           }}
         >
           <LogOut aria-hidden className="size-4" />
-          Sign out
+          {t('more.signOut')}
         </AppButton>
-        <p className="mt-2 text-caption text-text-2">
-          Signing out is what exercises the §6 guard — private routes redirect to /auth with a
-          redirectTo param.
-        </p>
       </div>
     </Sheet>
   )

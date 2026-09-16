@@ -99,7 +99,12 @@ describe('the §6 guard', () => {
     ['/\\evil.com', '/app/dashboard'],
     ['/app/budget', '/app/budget'],
   ])('sends redirectTo=%s to %s', async (requested, expected) => {
-    useSession.setState({ signedIn: false })
+    /* An account exists but is signed out — the state that shows a Sign in
+       button. With no account at all the screen offers sign-up instead. */
+    useSession.setState({
+      signedIn: false,
+      account: { displayName: 'Test', email: 'test@example.com', createdAt: '2026-01-01' },
+    })
     const router = createMemoryRouter(routes, {
       initialEntries: ['/auth?redirectTo=' + encodeURIComponent(requested)],
     })

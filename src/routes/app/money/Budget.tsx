@@ -85,7 +85,8 @@ export function Budget() {
           empty={{
             icon: Wallet,
             title: 'No limits set',
-            description: 'Give each category a monthly limit and overspending becomes visible early.',
+            description:
+              'Give each category a monthly limit and overspending becomes visible early.',
           }}
         />
       </ModuleSection>
@@ -102,7 +103,8 @@ export function Budget() {
           empty={{
             icon: RefreshCw,
             title: 'Nothing recurring yet',
-            description: 'Rent, subscriptions and utilities are marked automatically as you add them.',
+            description:
+              'Rent, subscriptions and utilities are marked automatically as you add them.',
           }}
         />
       </ModuleSection>

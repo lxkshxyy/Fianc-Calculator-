@@ -1,4 +1,5 @@
 import { Check, Lock, type LucideIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/cn'
@@ -17,6 +18,7 @@ export type StageState = 'locked' | 'available' | 'current' | 'complete'
 export function StageCard({
   index,
   name,
+  emoji,
   tagline,
   wealthBand,
   icon: Icon,
@@ -28,6 +30,8 @@ export function StageCard({
 }: {
   index: number
   name: string
+  /** Shown beside the stage name. Optional so the card stays usable without one. */
+  emoji?: string
   tagline: string
   wealthBand: string
   icon: LucideIcon
@@ -89,7 +93,14 @@ export function StageCard({
         <p className="text-micro text-text-label font-medium tracking-[0.1em] uppercase">
           Stage {index}
         </p>
-        <h3 className="text-body text-text font-semibold">{name}</h3>
+        <h3 className="text-body text-text font-semibold">
+          {emoji === undefined ? null : (
+            <span aria-hidden className="mr-1">
+              {emoji}
+            </span>
+          )}
+          {name}
+        </h3>
         <p className="text-caption text-text-2">{tagline}</p>
       </div>
 
@@ -108,10 +119,15 @@ export function StageCard({
           </span>
         ) : (
           <div className="flex w-full items-center gap-2">
-            <div className="rounded-pill bg-surface-2 h-1.5 flex-1 overflow-hidden">
+            <div className="meter-track h-2 flex-1 overflow-hidden">
               <div
-                className="rounded-pill bg-gold h-full"
-                style={{ width: Math.round(Math.min(Math.max(progress ?? 0, 0), 1) * 100) + '%' }}
+                className="meter-fill"
+                style={
+                  {
+                    '--meter-to': Math.round(Math.min(Math.max(progress ?? 0, 0), 1) * 100) + '%',
+                    '--meter-hue': 'var(--accent)',
+                  } as CSSProperties
+                }
               />
             </div>
             <span className="tabular text-caption text-text-2">

@@ -3,8 +3,10 @@ import { NavLink } from 'react-router-dom'
 
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { Wordmark } from '@/components/ui/Wordmark'
 import { TierBadge } from '@/components/ui/TierBadge'
 import { useProfile } from '@/data/store/data'
+import { useT } from '@/i18n'
 import { cn } from '@/lib/cn'
 import { APP_BASE, NAV_GROUPS } from './navigation'
 
@@ -16,27 +18,26 @@ import { APP_BASE, NAV_GROUPS } from './navigation'
  * end does not start dragging the page behind it.
  */
 export function Sidebar() {
+  const t = useT()
   const profile = useProfile()
   const displayName = profile?.displayName ?? 'You'
   const tier = profile?.tier ?? 'silver'
 
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-[260px] flex-col border-r border-border bg-bg-elevated lg:flex">
-      {/* §5.1 — "Top: wordmark + theme toggle." Two rows rather than one: three
-          44px segments (§10.8) plus the wordmark do not fit across 260px. */}
-      <div className="flex flex-col gap-3 px-4 pt-5 pb-4">
-        <span className="px-1 text-title font-bold tracking-tight text-text">
-          Prosperity<span className="text-gold">Path</span>
-        </span>
+    <aside className="border-border bg-bg-elevated fixed inset-y-0 left-0 hidden w-[260px] flex-col border-r lg:flex">
+      {/* §5.1 — "Top: wordmark + theme toggle." One row now: the toggle is a
+          single 44px button, so both fit across 260px. */}
+      <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-4">
+        <Wordmark className="text-lead leading-tight" />
         <ThemeToggle />
       </div>
 
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-tile bg-surface-2 p-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-gold/15 text-body font-semibold text-gold">
+      <div className="rounded-tile bg-surface-2 mx-4 mb-4 flex items-center gap-3 p-3">
+        <span className="rounded-pill bg-gold/15 text-body text-gold flex size-9 shrink-0 items-center justify-center font-semibold">
           {displayName.slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-meta font-medium text-text">{displayName}</p>
+          <p className="text-meta text-text truncate font-medium">{displayName}</p>
           <TierBadge tier={tier} size="sm" className="mt-1" />
         </div>
       </div>
@@ -44,7 +45,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto overscroll-contain px-3 pb-6">
         {NAV_GROUPS.map((group) => (
           <div key={group.id} className="mb-5">
-            <SectionLabel className="px-2 pb-2">{group.label}</SectionLabel>
+            <SectionLabel className="px-2 pb-2">{t(group.labelKey)}</SectionLabel>
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const to = item.external === true ? item.path : APP_BASE + '/' + item.path
@@ -55,10 +56,10 @@ export function Sidebar() {
                       end={item.external !== true}
                       className={({ isActive }) =>
                         cn(
-                          'group relative flex min-h-11 items-center gap-2.5 rounded-tile pr-2 pl-3 text-meta',
+                          'group rounded-tile text-meta relative flex min-h-11 items-center gap-2.5 pr-2 pl-3',
                           'transition-colors duration-150',
                           isActive && item.external !== true
-                            ? 'bg-surface font-medium text-gold'
+                            ? 'bg-surface text-gold font-medium'
                             : 'text-text-2 hover:bg-surface-2 hover:text-text',
                         )
                       }
@@ -68,22 +69,24 @@ export function Sidebar() {
                           {isActive && item.external !== true ? (
                             <span
                               aria-hidden
-                              className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-pill bg-gold"
+                              className="rounded-pill bg-gold absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2"
                             />
                           ) : null}
                           <item.icon aria-hidden className="size-4 shrink-0" />
-                          <span className="flex-1 truncate">{item.label}</span>
+                          <span className="flex-1 truncate">{t(item.labelKey)}</span>
                           {item.external === true ? (
                             <ExternalLink
-                              aria-label="(leaves the app)"
-                              className="size-3.5 shrink-0 text-text-3"
+                              aria-label={t('header.leavesApp')}
+                              className="text-text-3 size-3.5 shrink-0"
                             />
                           ) : (
                             <ChevronRight
                               aria-hidden
                               className={cn(
                                 'size-3.5 shrink-0',
-                                isActive ? 'text-gold' : 'text-text-3 opacity-0 group-hover:opacity-100',
+                                isActive
+                                  ? 'text-gold'
+                                  : 'text-text-3 opacity-0 group-hover:opacity-100',
                               )}
                             />
                           )}

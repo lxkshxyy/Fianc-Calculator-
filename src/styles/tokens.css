@@ -19,6 +19,12 @@
  *   system light + light      -> media block, then [data-theme="light"] (light)
  *   system light + dark       -> media block is guarded by :not([data-theme="dark"]),
  *                                so it does not match; :root wins (dark)
+ *
+ * ── Palette: near-black and gold ────────────────────────────────────────────
+ * A violet theme was trialled here and reverted. What survived is the naming:
+ * --accent is the brand colour by role rather than by hue, and --gold remains
+ * as its alias so every existing `text-gold` / `bg-gold` keeps working. Swapping
+ * the palette again is a change to this file alone.
  */
 
 :root {
@@ -36,22 +42,52 @@
   --text-label: #868f96;
   --text-3: #6b757c;
 
-  --gold: #e8b448;
-  --gold-strong: #f3c766;
-  --gold-dim: #7a5e24;
-  --on-gold: #0a0b0c;
+  --accent: #e8b448;
+  --accent-strong: #f3c766;
+  --accent-dim: #7a5e24;
+  --on-accent: #0a0b0c;
+
+  /* Points, coins and streaks. The same gold here — one brand colour, and this
+     token is what keeps rewards independent of the accent if they ever diverge. */
+  --reward: #e8b448;
+  --reward-dim: #7a5e24;
+  --on-reward: #0a0b0c;
+
+  /* Aliases of the accent — every existing `text-gold` / `bg-gold` still works. */
+  --gold: var(--accent);
+  --gold-strong: var(--accent-strong);
+  --gold-dim: var(--accent-dim);
+  --on-gold: var(--on-accent);
 
   --danger: #f15050; /* §4.1 — 4.79:1 on --surface-2; #EF4444 was 4.45:1, under AA */
   --warn: #f59e0b;
   --success: #22c55e;
   --info: #60a5fa;
+
+  /*
+   * §4.1b — the category scale.
+   *
+   * One gold everywhere made every tile read as the same thing. These six hues
+   * give each metric its own identity while the ground stays #0A0B0C, which is
+   * the whole point: colour arrives on the content, not on the page.
+   *
+   * Every hue clears AA 4.5:1 against all four dark grounds, so they are safe
+   * as text and not only as decoration. The tinted tile behind an icon is the
+   * same hue at 12% — a wash, never a fill that needs its own contrast pass.
+   */
+  --cat-sky: #5ab9f5; /* 7.74:1 worst ground */
+  --cat-mint: #4ade80; /* 9.62:1 */
+  --cat-violet: #a78bfa; /* 6.16:1 */
+  --cat-amber: #e8b448; /* 8.82:1 */
+  --cat-rose: #f472b6; /* 6.33:1 */
+  --cat-teal: #2dd4bf; /* 9.01:1 */
 }
 
 /*
  * Light theme. §4.1 mandates the same variable names and gives no values, so
  * these are derived and contrast-measured rather than eyeballed. Every one of
  * --text, --text-2, --text-label and the four semantic hues clears 4.5:1 on all
- * three grounds (--bg, --surface, --surface-2); --gold clears 4.5:1 as text and
+ * three grounds (--bg, --surface, --surface-2); --accent clears 4.5:1 as text and
  * carries white at 5.68:1 as a fill. The dark accent (#E8B448) is 1.8:1 on white
  * and cannot survive the flip, so light gold is darkened rather than reused.
  */
@@ -71,15 +107,32 @@
     --text-label: #5d6870;
     --text-3: #98a2a9;
 
-    --gold: #8b5e00;
-    --gold-strong: #6b4a00;
-    --gold-dim: #e8ce92;
-    --on-gold: #ffffff;
+    --accent: #8b5e00;
+    --accent-strong: #6b4a00;
+    --accent-dim: #e8ce92;
+    --on-accent: #ffffff;
+
+    --reward: #8b5e00;
+    --reward-dim: #e8ce92;
+    --on-reward: #ffffff;
+
+    --gold: var(--accent);
+    --gold-strong: var(--accent-strong);
+    --gold-dim: var(--accent-dim);
+    --on-gold: var(--on-accent);
 
     --danger: #c8271f;
     --warn: #8a5a00;
     --success: #0f7736;
     --info: #1b5fbf;
+
+    /* Darkened for the flip — the dark hues are 1.5–2:1 on white. */
+    --cat-sky: #0b6ba8; /* 5.08:1 */
+    --cat-mint: #0f7736; /* 5.04:1 */
+    --cat-violet: #6d28d9; /* 6.33:1 */
+    --cat-amber: #8b5e00; /* 5.06:1 */
+    --cat-rose: #a81d5b; /* 6.25:1 */
+    --cat-teal: #0f6e66; /* 5.44:1 */
   }
 }
 
@@ -99,13 +152,49 @@
   --text-label: #5d6870;
   --text-3: #98a2a9;
 
-  --gold: #8b5e00;
-  --gold-strong: #6b4a00;
-  --gold-dim: #e8ce92;
-  --on-gold: #ffffff;
+  --accent: #8b5e00;
+  --accent-strong: #6b4a00;
+  --accent-dim: #e8ce92;
+  --on-accent: #ffffff;
+
+  --reward: #8b5e00;
+  --reward-dim: #e8ce92;
+  --on-reward: #ffffff;
+
+  --gold: var(--accent);
+  --gold-strong: var(--accent-strong);
+  --gold-dim: var(--accent-dim);
+  --on-gold: var(--on-accent);
 
   --danger: #c8271f;
   --warn: #8a5a00;
   --success: #0f7736;
   --info: #1b5fbf;
+
+  /* Darkened for the flip — the dark hues are 1.5–2:1 on white. */
+  --cat-sky: #0b6ba8; /* 5.08:1 */
+  --cat-mint: #0f7736; /* 5.04:1 */
+  --cat-violet: #6d28d9; /* 6.33:1 */
+  --cat-amber: #8b5e00; /* 5.06:1 */
+  --cat-rose: #a81d5b; /* 6.25:1 */
+  --cat-teal: #0f6e66; /* 5.44:1 */
+}
+
+/*
+ * §4.3b — density.
+ *
+ * Two spacing scales, switched by data-density on <html> (src/config/density.ts).
+ * Bare :root is the roomier one so nothing depends on the attribute being there,
+ * the same rule the theme follows.
+ */
+:root {
+  --pad-card: 1.25rem; /* 20px */
+  --gap-section: 1.5rem; /* 24px */
+  --gap-grid: 0.75rem; /* 12px */
+}
+
+:root[data-density='dense'] {
+  --pad-card: 0.875rem; /* 14px */
+  --gap-section: 0.875rem; /* 14px */
+  --gap-grid: 0.625rem; /* 10px */
 }

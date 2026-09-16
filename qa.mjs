@@ -160,6 +160,66 @@ mustExist('overscroll-behavior used (§10.4)', '', (body) => body.includes('over
 mustExist('100dvh used (§10.2)', '', (body) => /100dvh|min-h-dvh/.test(body))
 mustExist('inputMode on amount entry (§10.9)', '', (body) => body.includes('inputMode'))
 
+/*
+ * Build-aid copy must not reach a customer.
+ *
+ * The app carried "Preview mode — every paid screen is unlocked", "Reset to
+ * demo data", a tier switcher, and two raw spec references (§9.5, §6) rendered
+ * as body text. Each was written for whoever was building the app and each was
+ * visible to anyone being shown it. This is the check that stops them coming
+ * back in the next screen somebody writes.
+ */
+const BUILD_AID = [
+  { pattern: /Preview mode/, why: 'the paywall banner' },
+  { pattern: /demo data/i, why: 'a demo-data control' },
+  { pattern: /build aid/i, why: 'a build aid described to the user' },
+  /* Added after this check passed while the Upgrade screen still told customers
+     "No payment provider is wired up in this build". A checker only catches the
+     wording it knows; this is the wording it did not. */
+  { pattern: /in this build/i, why: 'a note about the build, shown to the user' },
+  { pattern: /payment provider/i, why: 'scaffolding around the missing paywall' },
+  { pattern: /§\d/, why: 'a spec section number in user-visible text' },
+]
+
+check(
+  'No build-aid copy in shipped screens',
+  'Text written for the developer, rendered to the customer.',
+  PRODUCT.filter((f) => f.startsWith('src/') && !f.includes('routes/dev/')).flatMap((f) =>
+    codeLines(f)
+      /*
+       * console.* is not user-visible text. The dev-only scroll guard logs
+       * '§10.6 horizontal page scroll…' to the console, which is exactly where a
+       * spec number belongs; flagging it would teach people to ignore this check.
+       */
+      .filter(({ line }) => !/console\.\w+|^\s*'/.test(line.trim()) || !/§/.test(line))
+      .filter(({ line }) => BUILD_AID.some(({ pattern }) => pattern.test(line)))
+      .map(({ number, line }) => {
+        const reason = BUILD_AID.find(({ pattern }) => pattern.test(line))
+        return `${f}:${String(number)} — ${reason?.why ?? 'build-aid text'}`
+      }),
+  ),
+)
+
+/*
+ * Translation coverage.
+ *
+ * Not a pass/fail: a partly translated app is a normal state and the English
+ * fallback is the design. What is worth knowing is the number, so it is not
+ * quietly forgotten at 40%.
+ */
+{
+  const enKeys = [...read('src/i18n/en.ts').matchAll(/^\s{2}'([^']+)':/gm)].map((m) => m[1])
+  const hiKeys = new Set([...read('src/i18n/hi.ts').matchAll(/^\s{2}'([^']+)':/gm)].map((m) => m[1]))
+  const missing = enKeys.filter((key) => !hiKeys.has(key))
+  const pct = enKeys.length === 0 ? 0 : Math.round(((enKeys.length - missing.length) / enKeys.length) * 100)
+  console.log('')
+  console.log(`  Hindi covers ${String(pct)}% of ${String(enKeys.length)} keys.`)
+  if (missing.length > 0) {
+    console.log(`  Untranslated (falls back to English): ${missing.slice(0, 6).join(', ')}`)
+    if (missing.length > 6) console.log(`  …and ${String(missing.length - 6)} more`)
+  }
+}
+
 results.push({
   name: 'viewport-fit=cover in index.html (§10.3)',
   detail: 'Without it every safe-area inset resolves to 0px and item 3 silently no-ops.',
@@ -199,13 +259,30 @@ console.log(
     : `  ${String(failures)} of ${String(results.length)} checks failed.`,
 )
 
+/*
+ * The paywall reminder.
+ *
+ * It used to be a banner across the top of the app, which meant the person being
+ * shown the build saw it too. This is where it belongs instead: printed on every
+ * local run and in every CI build log, in front of the only person who can act
+ * on it.
+ */
+const previewSource = read('src/config/preview.ts')
+if (/export const PREVIEW_ALL = true/.test(previewSource)) {
+  console.log('')
+  console.log('  ' + '!'.repeat(64))
+  console.log('  PREVIEW MODE IS ON — every paid screen is unlocked in this build.')
+  console.log('  Set PREVIEW_ALL to false in src/config/preview.ts before publishing.')
+  console.log('  ' + '!'.repeat(64))
+}
+
 console.log('')
 console.log('  Still needs a person (§12):')
 console.log('   · 360×640, 768×1024 and 1440×900 — no horizontal scroll, nothing behind the tab bar')
 console.log('   · A real phone or notched emulator — safe-area insets cannot be checked on desktop')
 console.log('   · Tab through the dashboard and open a sheet without touching the mouse')
-console.log('   · Settings → Clear everything, then visit every screen')
-console.log('   · Settings → switch to Silver, confirm gated screens lock rather than blank')
+console.log('   · Settings → Delete my data, then visit every screen')
+console.log('   · Settings → switch to Silver (dev build only), confirm gated screens lock rather than blank')
 console.log('   · Install to the home screen on Android, then turn off the network')
 console.log('')
 

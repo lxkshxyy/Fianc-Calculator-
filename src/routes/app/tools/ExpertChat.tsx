@@ -22,10 +22,10 @@ export function ExpertChat() {
       <ModuleSection label="Book a call">
         <Card>
           <div className="flex items-start gap-3">
-            <CalendarClock aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
+            <CalendarClock aria-hidden className="text-gold mt-0.5 size-5 shrink-0" />
             <div>
-              <h2 className="font-semibold text-text">A free 15-minute call</h2>
-              <p className="mt-1.5 max-w-prose text-sm text-text-2">
+              <h2 className="text-text font-semibold">A free 15-minute call</h2>
+              <p className="text-text-2 mt-1.5 max-w-prose text-sm">
                 Booking connects to the advisory team's calendar, which is not wired up in this
                 build. Use the Request Centre in the meantime — it reaches the same team.
               </p>

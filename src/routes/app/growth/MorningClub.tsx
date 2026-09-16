@@ -63,7 +63,7 @@ export function MorningClub() {
     >
       <ModuleSection label="Today">
         <Card>
-          <p className="text-balance text-lead text-text">{affirmation}</p>
+          <p className="text-lead text-text text-balance">{affirmation}</p>
           <div className="mt-4">
             <AppButton
               onClick={() => {

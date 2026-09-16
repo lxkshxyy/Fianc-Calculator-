@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
-import { PreviewBanner } from '@/components/ui/PreviewBanner'
 import { DataGate } from './DataGate'
 import { RouteSkeleton } from './RouteBoundary'
 import { AppHeader } from './nav/AppHeader'
@@ -90,7 +89,6 @@ export function AppLayout() {
       <Sidebar />
 
       <div className="flex min-h-dvh flex-col">
-        <PreviewBanner />
         <AppHeader
           onOpenMore={() => {
             setMoreOpen(true)

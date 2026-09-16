@@ -45,18 +45,23 @@ export function RecordList({
   }
 
   return (
-    <ul className={cn('divide-y divide-border overflow-hidden rounded-card border border-border bg-surface', className)}>
+    <ul
+      className={cn(
+        'divide-border rounded-card border-border bg-surface divide-y overflow-hidden border',
+        className,
+      )}
+    >
       {rows.map((row) => {
         const body = (
           <>
             <div className="flex items-center gap-3">
               {row.icon === undefined ? null : (
-                <row.icon aria-hidden className="size-4 shrink-0 text-text-3" />
+                <row.icon aria-hidden className="text-text-3 size-4 shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-sm text-text">{row.title}</div>
+                <div className="text-text truncate text-sm font-medium">{row.title}</div>
                 {row.subtitle === undefined ? null : (
-                  <div className="truncate text-caption text-text-2">{row.subtitle}</div>
+                  <div className="text-caption text-text-2 truncate">{row.subtitle}</div>
                 )}
               </div>
               <div className="shrink-0 text-right">
@@ -80,7 +85,7 @@ export function RecordList({
                 onClick={() => {
                   onSelect(row.id)
                 }}
-                className="w-full px-4 py-3.5 text-left transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-text-2 focus-visible:-outline-offset-2"
+                className="hover:bg-surface-2 focus-visible:outline-text-2 w-full px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
               >
                 {body}
               </button>
@@ -93,10 +98,16 @@ export function RecordList({
 }
 
 /** A thin proportion bar. `value` is 0–1 and is clamped; over-budget shows danger. */
-export function Meter({ value, tone = 'gold' }: { value: number; tone?: 'gold' | 'danger' | 'success' }) {
+export function Meter({
+  value,
+  tone = 'gold',
+}: {
+  value: number
+  tone?: 'gold' | 'danger' | 'success'
+}) {
   const pct = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0)) * 100
   return (
-    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+    <span className="bg-surface-2 block h-1.5 w-full overflow-hidden rounded-full">
       <span
         className={cn(
           'block h-full rounded-full',
