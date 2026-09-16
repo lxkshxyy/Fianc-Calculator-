@@ -15,7 +15,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * already uses behaves exactly as it does in a browser.
  */
 const config: CapacitorConfig = {
-  appId: 'ai.prosperitypath.app',
+  appId: 'com.wealthrebuildcircle.app',
   /* The short form: Android truncates a launcher label past ~12 characters,
      so the app picks the abbreviation rather than letting an ellipsis pick it. */
   appName: 'WRC',

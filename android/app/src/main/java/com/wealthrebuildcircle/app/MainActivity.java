@@ -1,4 +1,4 @@
-package ai.prosperitypath.app;
+package com.wealthrebuildcircle.app;
 
 import com.getcapacitor.BridgeActivity;
 

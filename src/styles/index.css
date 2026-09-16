@@ -57,16 +57,26 @@
   --color-success: var(--success);
   --color-info: var(--info);
 
-  /* §4.2 type scale — 11 / 12 / 13 / 14 / 16 / 20 / 24 / 34 / 44. */
-  --text-micro: 11px;
-  --text-caption: 12px;
-  --text-meta: 13px;
-  --text-body: 14px;
-  --text-lead: 16px;
-  --text-title: 20px;
-  --text-heading: 24px;
-  --text-page: 34px;
-  --text-hero: 44px;
+  /*
+   * §4.2 type scale — 11 / 12 / 13 / 14 / 16 / 20 / 24 / 34 / 44, in rem.
+   *
+   * These were absolute pixels, which is why the app read as tiny on a phone and
+   * why Android's own font-size slider did nothing to it: px is px, and a person
+   * who has set their phone to large text was still given 11px captions. In rem
+   * the same numbers are now relative to the root size below, so the scale keeps
+   * its proportions and the person keeps control of how big it is.
+   *
+   * Divide by 16 to read them back as pixels at the default root size.
+   */
+  --text-micro: 0.6875rem;
+  --text-caption: 0.75rem;
+  --text-meta: 0.8125rem;
+  --text-body: 0.875rem;
+  --text-lead: 1rem;
+  --text-title: 1.25rem;
+  --text-heading: 1.5rem;
+  --text-page: 2.125rem;
+  --text-hero: 2.75rem;
 
   /* §4.3b — density-driven spacing. `p-card`, `space-y-section` and `gap-grid`
      follow whatever data-density is on <html>, so one switch respaces the app. */
@@ -84,6 +94,22 @@
 
 @layer base {
   html {
+    /*
+     * ── THE ONE KNOB THAT MAKES THE WHOLE APP BIGGER OR SMALLER ──────────────
+     * Every size in the app is in rem, so this scales all of it together —
+     * type, padding, gaps, icons — without any layout going out of proportion.
+     *
+     *   100%    the browser default, 16px
+     *   112.5%  what this is: 18px, sized for a phone held at arm's length
+     *   125%    larger again
+     *
+     * A percentage rather than a px value on purpose: `font-size: 18px` would
+     * override somebody who has set their phone or browser to large text, which
+     * is the accessibility failure this whole change exists to fix. A percentage
+     * multiplies their setting instead of replacing it.
+     */
+    font-size: 112.5%;
+
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -101,7 +127,7 @@
       'Segoe UI',
       Roboto,
       sans-serif;
-    font-size: 14px;
+    font-size: 1rem;
     line-height: 1.5;
   }
 

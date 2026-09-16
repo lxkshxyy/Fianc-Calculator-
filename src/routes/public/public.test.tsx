@@ -124,7 +124,7 @@ describe('the insurance review form', () => {
     await user.type(screen.getByLabelText(/full name/i), 'A Sharma')
 
     await waitFor(() => {
-      const raw = globalThis.localStorage.getItem('prosperitypath.request.insurance-review')
+      const raw = globalThis.localStorage.getItem('wrc.request.insurance-review')
       expect(raw).not.toBeNull()
       expect(raw ?? '').toContain('A Sharma')
     })
@@ -138,7 +138,7 @@ describe('the insurance review form', () => {
     await user.click(screen.getByRole('button', { name: /discard this draft/i }))
 
     await waitFor(() => {
-      const raw = globalThis.localStorage.getItem('prosperitypath.request.insurance-review')
+      const raw = globalThis.localStorage.getItem('wrc.request.insurance-review')
       expect(raw ?? '').not.toContain('A Sharma')
     })
     expect(screen.getByLabelText(/full name/i)).toHaveValue('')

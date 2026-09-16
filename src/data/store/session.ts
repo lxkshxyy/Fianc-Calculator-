@@ -87,7 +87,7 @@ export const useSession = create<SessionState>()(
       },
     }),
     {
-      name: 'prosperitypath.session',
+      name: 'wrc.session',
       version: 3,
 
       /* Persist data only — never the action functions. */
@@ -108,7 +108,7 @@ export const useSession = create<SessionState>()(
         const parsed = PersistedSession.safeParse(persisted)
         if (!parsed.success) {
           console.warn(
-            'prosperitypath.session failed validation; reseeding this slice only.',
+            'wrc.session failed validation; reseeding this slice only.',
             parsed.error.issues,
           )
           return { ...current, ...EMPTY }

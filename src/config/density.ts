@@ -13,7 +13,7 @@
  */
 export type Density = 'calm' | 'dense'
 
-export const DENSITY: Density = 'dense'
+export const DENSITY: Density = 'calm'
 
 /** Stamps <html data-density>. Called before first paint, like the theme. */
 export function applyDensity(density: Density = DENSITY): void {

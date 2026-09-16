@@ -142,14 +142,22 @@ class MemoryStorage implements Storage {
   }
 }
 
-class ProsperityDatabase extends Dexie {
+const DB_NAME = 'wrc'
+/** What the database was called before the rebrand. Read once, never written. */
+const LEGACY_DB_NAME = 'prosperitypath'
+
+function storeDefinitions(): Record<string, string> {
+  const stores: Record<string, string> = { singletons: 'key' }
+  for (const name of COLLECTION_NAMES) stores[name] = 'id'
+  return stores
+}
+
+class WrcDatabase extends Dexie {
   declare singletons: Table<SingletonRow, string>
 
-  constructor() {
-    super('prosperitypath')
-    const stores: Record<string, string> = { singletons: 'key' }
-    for (const name of COLLECTION_NAMES) stores[name] = 'id'
-    this.version(1).stores(stores)
+  constructor(name: string = DB_NAME) {
+    super(name)
+    this.version(1).stores(storeDefinitions())
   }
 
   table_(name: CollectionName): Table<unknown, string> {
@@ -157,8 +165,44 @@ class ProsperityDatabase extends Dexie {
   }
 }
 
+/**
+ * Carries a household across the rename from `prosperitypath` to `wrc`.
+ *
+ * An IndexedDB database is addressed by name, so renaming one does not move the
+ * data — it opens a different, empty database and the old one sits there
+ * invisible. For a notes app that is an annoyance. For somebody's assets, loans
+ * and goals it is data loss, and it would have happened silently on the first
+ * launch after an update.
+ *
+ * Deliberately one-way and non-destructive: the old database is read and left
+ * exactly where it is. If this throws half-way, nothing has been lost — the
+ * original is still intact and the next launch tries again, because the new
+ * database is still empty.
+ *
+ * `Dexie.exists` avoids the trap that opening a database by name *creates* it,
+ * which would make every fresh install look like it had something to migrate.
+ */
+async function migrateFromLegacy(target: WrcDatabase): Promise<void> {
+  if (!(await target.singletons.count().then((count) => count === 0))) return
+  if (!(await Dexie.exists(LEGACY_DB_NAME))) return
+
+  const legacy = new WrcDatabase(LEGACY_DB_NAME)
+  try {
+    await legacy.open()
+    for (const name of COLLECTION_NAMES) {
+      const rows = await legacy.table_(name).toArray()
+      if (rows.length > 0) await target.table_(name).bulkPut(rows)
+    }
+    const singletons = await legacy.singletons.toArray()
+    if (singletons.length > 0) await target.singletons.bulkPut(singletons)
+    console.info('Moved your data across from the previous app name.')
+  } finally {
+    legacy.close()
+  }
+}
+
 class DexieStorage implements Storage {
-  constructor(private readonly db: ProsperityDatabase) {}
+  constructor(private readonly db: WrcDatabase) {}
 
   async all(name: CollectionName): Promise<unknown[]> {
     return await this.db.table_(name).toArray()
@@ -197,8 +241,15 @@ async function openStorage(): Promise<Storage> {
     return new MemoryStorage()
   }
   try {
-    const db = new ProsperityDatabase()
+    const db = new WrcDatabase()
     await db.open()
+    /* A failed migration must not stop the app opening — the old data is still
+       there to try again next launch, and an empty app beats a broken one. */
+    try {
+      await migrateFromLegacy(db)
+    } catch (error) {
+      console.warn('Could not carry data over from the previous app name.', error)
+    }
     return new DexieStorage(db)
   } catch (error) {
     console.warn('IndexedDB unavailable; falling back to in-memory storage.', error)

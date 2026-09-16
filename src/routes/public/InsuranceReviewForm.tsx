@@ -25,7 +25,7 @@ import { PublicShell } from './PublicShell'
  *      step 1 was wrong is how forms get abandoned.
  */
 
-const DRAFT_KEY = 'prosperitypath.request.insurance-review'
+const DRAFT_KEY = 'wrc.request.insurance-review'
 
 const NEEDS = [
   'New term insurance',
