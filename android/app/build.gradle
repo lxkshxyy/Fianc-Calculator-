@@ -16,7 +16,32 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    /*
+     * One fixed debug key, kept with the project (app/wrc-debug.keystore), so
+     * every APK — from GitHub Actions or from this machine — is signed the same
+     * way and installs over the last one, keeping the data on the phone.
+     *
+     * Before this, CI restored the key from the Actions cache, which GitHub
+     * deletes after 7 days without use. The first build after a quiet week then
+     * got a brand-new key, and Android refuses an update signed by a different
+     * key: the only way in was to uninstall, which wipes everything the app has
+     * stored. A committed key cannot expire.
+     *
+     * It is a debug key, for sideloaded test builds only. A Play Store release
+     * needs its own key, kept out of the repository.
+     */
+    signingConfigs {
+        debug {
+            storeFile file('wrc-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
