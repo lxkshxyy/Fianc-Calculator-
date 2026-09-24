@@ -1,5 +1,6 @@
-import { createReadStream, existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
+import { gunzipSync } from 'node:zlib'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -18,12 +19,23 @@ import { defineConfig } from 'vitest/config'
  * Two engine builds ship: SIMD for any recent WebView, and the plain one as the
  * fallback for an old phone. The larger non-LSTM builds are not needed — the app
  * only ever runs the LSTM recogniser.
+ *
+ * The model ships unzipped, as `eng.traineddata`. It is published gzipped, but
+ * the Android build strips the `.gz` from any asset's name, so a `.gz` model
+ * would be in the APK under a name the app never asks for and scanning would
+ * fail on the phone while working in a browser. The APK compresses it anyway.
  */
 const OCR_FILES: Record<string, string> = {
   'worker.min.js': 'tesseract.js/dist/worker.min.js',
   'tesseract-core-simd-lstm.wasm.js': 'tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
   'tesseract-core-lstm.wasm.js': 'tesseract.js-core/tesseract-core-lstm.wasm.js',
-  'eng.traineddata.gz': '@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz',
+  'eng.traineddata': '@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz',
+}
+
+/** The bytes to serve for an OCR asset — the model gunzipped, everything else as it is. */
+function ocrBytes(file: string): Buffer {
+  const bytes = readFileSync(ocrSource(file))
+  return OCR_FILES[file]?.endsWith('.gz') === true ? gunzipSync(bytes) : bytes
 }
 
 function ocrSource(file: string): string {
@@ -51,7 +63,7 @@ function ocrAssets(): Plugin {
           'Content-Type',
           file.endsWith('.js') ? 'text/javascript' : 'application/octet-stream',
         )
-        createReadStream(ocrSource(file)).pipe(response)
+        response.end(ocrBytes(file))
       })
     },
     generateBundle() {
@@ -59,7 +71,7 @@ function ocrAssets(): Plugin {
         this.emitFile({
           type: 'asset',
           fileName: `ocr/${file}`,
-          source: readFileSync(ocrSource(file)),
+          source: ocrBytes(file),
         })
       }
     },

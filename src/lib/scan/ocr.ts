@@ -47,7 +47,8 @@ export async function recognise(
       hasSimd() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js',
     ),
     langPath: assetUrl('').replace(/\/$/, ''),
-    gzip: true,
+    /* Shipped unzipped — the Android build renames `.gz` assets (vite.config.ts). */
+    gzip: false,
     /* The model is already on the phone, inside the app. A second copy in
        IndexedDB would only take up the person's storage. */
     cacheMethod: 'none',
