@@ -1,10 +1,70 @@
+import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import type { Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import { defineConfig } from 'vitest/config'
+
+/*
+ * The on-device document reader (src/lib/scan/ocr.ts) needs three files beside
+ * the app: Tesseract's worker, its WebAssembly engine and the English model.
+ * They are copied straight out of node_modules — into the build as /ocr/*, and
+ * served from the same path by the dev server — so they can never drift from
+ * the tesseract.js version in package.json, and nothing binary is committed.
+ *
+ * Two engine builds ship: SIMD for any recent WebView, and the plain one as the
+ * fallback for an old phone. The larger non-LSTM builds are not needed — the app
+ * only ever runs the LSTM recogniser.
+ */
+const OCR_FILES: Record<string, string> = {
+  'worker.min.js': 'tesseract.js/dist/worker.min.js',
+  'tesseract-core-simd-lstm.wasm.js': 'tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  'tesseract-core-lstm.wasm.js': 'tesseract.js-core/tesseract-core-lstm.wasm.js',
+  'eng.traineddata.gz': '@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz',
+}
+
+function ocrSource(file: string): string {
+  const target = OCR_FILES[file]
+  if (target === undefined) throw new Error(`Unknown OCR asset ${file}`)
+  for (const root of ['./node_modules/', './node_modules/tesseract.js/node_modules/']) {
+    const candidate = fileURLToPath(new URL(root + target, import.meta.url))
+    if (existsSync(candidate)) return candidate
+  }
+  throw new Error(`OCR asset missing: ${target}. Run npm install.`)
+}
+
+function ocrAssets(): Plugin {
+  return {
+    name: 'wrc-ocr-assets',
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const match = /^\/ocr\/([\w.-]+)$/.exec((request.url ?? '').split('?')[0] ?? '')
+        const file = match?.[1]
+        if (file === undefined || OCR_FILES[file] === undefined) {
+          next()
+          return
+        }
+        response.setHeader(
+          'Content-Type',
+          file.endsWith('.js') ? 'text/javascript' : 'application/octet-stream',
+        )
+        createReadStream(ocrSource(file)).pipe(response)
+      })
+    },
+    generateBundle() {
+      for (const file of Object.keys(OCR_FILES)) {
+        this.emitFile({
+          type: 'asset',
+          fileName: `ocr/${file}`,
+          source: readFileSync(ocrSource(file)),
+        })
+      }
+    },
+  }
+}
 
 /*
  * A phone will not install this as an app over plain http on a LAN IP. A service
@@ -38,6 +98,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    ocrAssets(),
     /*
      * Prints a scannable QR of the Network URL in the terminal on `npm run dev`.
      * §10 is a set of claims about how this behaves on a phone, and none of them
@@ -84,6 +145,12 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        /*
+         * The OCR engine and the PDF reader are several megabytes and only
+         * needed by someone scanning a document — they load on first use rather
+         * than being forced into every install's precache.
+         */
+        globIgnores: ['ocr/**', '**/pdf.worker*'],
         /* Every route is client-rendered, so a cold deep link offline still
            resolves to the shell rather than the browser's error page. */
         navigateFallback: 'index.html',

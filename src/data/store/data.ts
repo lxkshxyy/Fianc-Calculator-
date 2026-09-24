@@ -4,7 +4,8 @@ import { create } from 'zustand'
 import { derive, type Derived } from '../../domain/derive'
 import { repo } from '../repo'
 import type { CollectionName, Collections, Draft, Patch, Snapshot } from '../repo/types'
-import type { Profile, TaxProfile } from '../schema'
+import { newId, type DocumentRecord, type Profile, type TaxProfile } from '../schema'
+import { deliverQueued } from '../sync/outbox'
 
 /**
  * §8.1 — the domain slice. Deliberately **not** persisted.
@@ -34,6 +35,13 @@ type DataState = {
     patch: Patch<Collections[K]>,
   ) => Promise<void>
   remove: <K extends CollectionName>(name: K, id: string) => Promise<void>
+  /** Stores the file, then the record pointing at it. Null when either write failed. */
+  addDocument: (
+    file: Blob,
+    draft: Omit<Draft<DocumentRecord>, 'fileId'>,
+  ) => Promise<DocumentRecord | null>
+  /** The record and its file, together — never one left behind without the other. */
+  removeDocument: (id: string) => Promise<void>
   saveProfile: (patch: Partial<Profile>) => Promise<void>
   saveTaxProfile: (patch: Partial<TaxProfile>) => Promise<void>
   resetToDemo: () => Promise<void>
@@ -72,6 +80,11 @@ export const useData = create<DataState>()((set, get) => {
         await repo.ready()
         await refresh()
       })
+      /* Anything left queued last time goes now — in the background, and only
+         when there is a server to take it (config/server.ts). */
+      void deliverQueued().then(async (sent) => {
+        if (sent > 0) await refresh()
+      })
     },
 
     create: async (name, draft) => {
@@ -93,6 +106,37 @@ export const useData = create<DataState>()((set, get) => {
     remove: async (name, id) => {
       await guarded(async () => {
         await repo.remove(name, id)
+        await refresh()
+      })
+    },
+
+    addDocument: async (file, draft) => {
+      let created: DocumentRecord | null = null
+      const fileId = newId('file')
+      await guarded(async () => {
+        await repo.putFile(fileId, file)
+        try {
+          created = await repo.create('documents', { ...draft, fileId })
+        } catch (error) {
+          /* The record was refused, so the file has nothing pointing at it. */
+          await repo.removeFile(fileId)
+          throw error
+        }
+        await refresh()
+      })
+      if (created !== null && draft.delivery === 'queued') {
+        void deliverQueued().then(async (sent) => {
+          if (sent > 0) await refresh()
+        })
+      }
+      return created
+    },
+
+    removeDocument: async (id) => {
+      await guarded(async () => {
+        const record = get().snapshot?.documents.find((entry) => entry.id === id)
+        await repo.remove('documents', id)
+        if (record !== undefined && record.fileId !== null) await repo.removeFile(record.fileId)
         await refresh()
       })
     },
@@ -140,6 +184,19 @@ export function useSnapshot(): Snapshot | null {
 export function useDerived(): Derived | null {
   const snapshot = useSnapshot()
   return useMemo(() => (snapshot === null ? null : derive(snapshot)), [snapshot])
+}
+
+/**
+ * The bytes behind a document, for previewing it. Read on demand, one file at a
+ * time — files are never part of the snapshot.
+ */
+export async function readDocumentFile(fileId: string): Promise<Blob | null> {
+  try {
+    return await repo.getFile(fileId)
+  } catch (error) {
+    console.warn('Could not read a stored document.', error)
+    return null
+  }
 }
 
 /** The profile record. Authoritative for display name and tier (§8.1). */

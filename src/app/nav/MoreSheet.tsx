@@ -2,8 +2,10 @@ import { ChevronRight, ExternalLink, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { AppButton } from '@/components/ui/AppButton'
+import { Avatar } from '@/components/ui/Avatar'
 import { Sheet } from '@/components/ui/Sheet'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useProfile } from '@/data/store/data'
 import { useSession } from '@/data/store/session'
 import { useT } from '@/i18n'
 import { APP_BASE, NAV_GROUPS } from './navigation'
@@ -19,6 +21,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const t = useT()
   const navigate = useNavigate()
   const signOut = useSession((state) => state.signOut)
+  const profile = useProfile()
   const tools = NAV_GROUPS.find((group) => group.id === 'tools')
 
   return (
@@ -28,6 +31,24 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
       title={t('more.title')}
       description={t('more.description')}
     >
+      <button
+        type="button"
+        onClick={() => {
+          onClose()
+          void navigate(APP_BASE + '/profile')
+        }}
+        className="rounded-tile bg-surface-2 hover:bg-surface border-border mb-4 flex w-full items-center gap-3 border p-3 text-left transition-colors"
+      >
+        <Avatar avatar={profile?.avatar} name={profile?.displayName ?? ''} size={44} />
+        <span className="min-w-0 flex-1">
+          <span className="text-body text-text block truncate font-semibold">
+            {profile?.displayName ?? ''}
+          </span>
+          <span className="text-caption text-text-2 block">{t('more.viewProfile')}</span>
+        </span>
+        <ChevronRight aria-hidden className="text-text-3 size-4" />
+      </button>
+
       <ul className="space-y-2">
         {(tools?.items ?? []).map((item) => (
           <li key={item.path}>

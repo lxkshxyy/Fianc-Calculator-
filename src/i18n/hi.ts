@@ -71,6 +71,7 @@ export const hi: Dictionary = {
   'action.details': 'विवरण →',
   'action.done': 'हो गया',
   'action.edit': 'बदलें',
+  'action.delete': 'हटाएं',
   'action.reset': 'रीसेट',
 
   /* ── Dashboard ───────────────────────────────────────────────────────── */
@@ -148,7 +149,12 @@ export const hi: Dictionary = {
   'emi.noScoreBody': 'जब भी स्कोर देखें, यहाँ जोड़ दें — रुझान अपने आप बनता जाएगा।',
 
   /* ── Settings ────────────────────────────────────────────────────────── */
+  'settings.profile': 'प्रोफ़ाइल',
+  'settings.profileLine': 'नाम, तस्वीर और भाषा',
   'settings.membership': 'सदस्यता',
+  'settings.upgrade': 'डायमंड में अपग्रेड करें',
+  'settings.upgradePending': 'अपना डायमंड कोड डालें',
+  'settings.upgradePendingLine': 'डायमंड का अनुरोध भेजा गया',
   'settings.allStages': 'सभी छह चरण खुले हैं',
   'settings.twoStages': 'पहला और दूसरा चरण खुला है',
   'settings.appearance': 'दिखावट',
@@ -159,6 +165,8 @@ export const hi: Dictionary = {
   'settings.languageNote': 'ऐप तुरंत बदल जाता है। आपका अपना डेटा कभी अनुवादित नहीं होता।',
   'settings.yourData': 'आपका डेटा',
   'settings.storedLocally': 'सब कुछ सिर्फ़ इसी डिवाइस पर रहता है। कहीं नहीं भेजा जाता।',
+  'settings.storedWithServer':
+    'आपके रिकॉर्ड इसी डिवाइस पर रहते हैं। आपके भेजे अनुरोध, और जो दस्तावेज़ आप साझा करना चुनें, WRC टीम तक जाते हैं।',
   'settings.deleteMyData': 'मेरा डेटा मिटाएँ',
   'settings.signOut': 'साइन आउट',
   'settings.confirmTitle': 'मेरा डेटा मिटाएँ?',
@@ -167,6 +175,31 @@ export const hi: Dictionary = {
     'आपकी आमदनी, खर्च, कर्ज़, निवेश, लक्ष्य और पॉलिसियाँ — सब हट जाएँगी। ऐप चलता रहेगा; हर स्क्रीन अपनी खाली हालत में लौट आएगी।',
   'settings.keepMyData': 'मेरा डेटा रहने दें',
   'settings.deleteEverything': 'सब कुछ मिटाएँ',
+
+  /* ── Profile ─────────────────────────────────────────────────────────── */
+  'nav.profile': 'प्रोफ़ाइल',
+  'header.openProfile': 'आपकी प्रोफ़ाइल',
+  'header.membership': 'सदस्यता: {tier}',
+  'more.viewProfile': 'प्रोफ़ाइल देखें',
+  'profile.subtitle': 'आपका नाम, तस्वीर और भाषा।',
+  'profile.picture': 'प्रोफ़ाइल तस्वीर',
+  'profile.pictureHint': 'कोई एक चुनें, या गैलरी से अपनी फ़ोटो लगाएँ।',
+  'profile.fromGallery': 'गैलरी से',
+  'profile.yourPhoto': 'आपकी फ़ोटो',
+  'profile.changePhoto': 'तस्वीर बदलें',
+  'profile.removePicture': 'तस्वीर हटाएँ',
+  'profile.avatarN': 'अवतार {n}',
+  'profile.photoError': 'यह तस्वीर इस्तेमाल नहीं हो सकी। JPG या PNG फ़ोटो आज़माएँ।',
+  'profile.details': 'आपकी जानकारी',
+  'profile.name': 'नाम',
+  'profile.nameHint': 'डैशबोर्ड पर आपको पहले शब्द से बुलाया जाता है।',
+  'profile.mobile': 'मोबाइल नंबर (वैकल्पिक)',
+  'profile.email': 'ईमेल',
+  'profile.save': 'जानकारी सहेजें',
+  'profile.saved': 'सहेज लिया',
+  'profile.nameNeeded': 'आपका नाम ज़रूरी है।',
+  'profile.emailInvalid': 'यह ईमेल सही नहीं लग रहा।',
+  'profile.mobileInvalid': '10 अंकों का मोबाइल नंबर डालें, या खाली छोड़ दें।',
 
   /* ── Record forms ────────────────────────────────────────────────────── */
   'field.name': 'नाम',
@@ -185,9 +218,17 @@ export const hi: Dictionary = {
   'field.targetAmount': 'लक्ष्य रकम',
   'field.savedSoFar': 'अब तक जमा',
   'field.targetDate': 'लक्ष्य तारीख',
+  'field.relation': 'रिश्ता',
+  'field.dateOfBirth': 'जन्म तिथि',
+  'field.dependent': 'क्या आर्थिक रूप से आप पर निर्भर हैं?',
+  'field.inHousehold': 'घर के कुल हिसाब में गिनें?',
+  'field.notes': 'नोट्स',
   'form.isNeeded': '{label} भरना ज़रूरी है।',
   'form.enterNumber': 'कोई संख्या भरें।',
   'form.unreadableAmount': 'यह रकम समझ नहीं आई। 15k, 1.5L या 15,000 की तरह लिखें।',
+  'form.amountTooLarge': 'बहुत बड़ी रकम। सीमा {max}।',
+  'record.deleteNamed': '{name} हटाएं',
+  'record.confirmDelete': 'इसे हटा दें? यह वापस नहीं आएगा।',
 
   /* ── Empty and loading states ────────────────────────────────────────── */
   'state.loading': 'लोड हो रहा है…',

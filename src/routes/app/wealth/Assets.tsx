@@ -6,12 +6,18 @@ import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { RecordList } from '@/components/ui/RecordList'
 import { isLiquid } from '@/data/schema'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { useData, useDerived, useSnapshot } from '@/data/store/data'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 
 export function Assets() {
   const snapshot = useSnapshot()
   const derived = useDerived()
+  /*
+   * One asset out, the rest untouched. The repository has had `remove` since the
+   * beginning; until now nothing on screen reached it, so correcting a single
+   * wrong entry meant Settings → delete everything and start again.
+   */
+  const removeRecord = useData((state) => state.remove)
   if (snapshot === null || derived === null) return null
 
   const withoutNominee = snapshot.assets.filter((asset) => asset.nominee === null)
@@ -62,7 +68,11 @@ export function Assets() {
             subtitle: `${asset.kind.replace('-', ' ')}${isLiquid(asset) ? ' · reachable today' : ''}`,
             value: <CurrencyText value={asset.value} size="body" tone="inherit" />,
             meta: asset.nominee === null ? 'No nominee' : `Nominee: ${asset.nominee}`,
+            deleteLabel: asset.name,
           }))}
+          onDelete={(id) => {
+            void removeRecord('assets', id)
+          }}
           empty={{
             icon: Landmark,
             title: 'Nothing recorded',

@@ -1,7 +1,8 @@
-import type { LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Trash2, type LucideIcon } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
+import { useT } from '@/i18n'
 import { EmptyState } from './EmptyState'
 
 /**
@@ -10,6 +11,13 @@ import { EmptyState } from './EmptyState'
  * Rows are buttons when `onSelect` is given, so the detail sheet opens from the
  * keyboard as well as a tap (§2.1.10), and they are plain list items when not —
  * rather than a div with a click handler, which is neither.
+ *
+ * `onDelete` puts a bin on each row, behind a confirm step that opens inside the
+ * row rather than in a modal: a single record is a small enough thing to remove
+ * that stealing the whole screen to ask about it is out of proportion, and one
+ * stray tap is not. The delete control is a sibling of the row body, never a
+ * child of it, because a button inside a button is not a thing a browser or a
+ * screen reader can make sense of.
  */
 export type RecordRow = {
   id: string
@@ -20,19 +28,35 @@ export type RecordRow = {
   meta?: ReactNode
   /** Rendered full-width under the row — a progress bar, a warning line. */
   footer?: ReactNode
+  /**
+   * The row's name in plain text, for the delete button's accessible name.
+   *
+   * `title` is a ReactNode and may be a whole element, so it cannot be dropped
+   * into an aria-label. Without this every bin in the list reads as "Delete",
+   * which tells a screen-reader user nothing about which one they are on.
+   */
+  deleteLabel?: string
 }
 
 export function RecordList({
   rows,
   empty,
   onSelect,
+  onDelete,
   className,
 }: {
   rows: RecordRow[]
   empty: { icon: LucideIcon; title: string; description: string; action?: ReactNode }
   onSelect?: (id: string) => void
+  /** Given, each row gets a bin and a confirm step. Removes that record only. */
+  onDelete?: (id: string) => void
   className?: string
 }) {
+  const t = useT()
+  /* One id at a time: opening a second confirm closes the first, so there is
+     never a list with two rows both asking to be deleted. */
+  const [confirming, setConfirming] = useState<string | null>(null)
+
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -75,20 +99,70 @@ export function RecordList({
           </>
         )
 
+        const main =
+          onSelect === undefined ? (
+            <div className="min-w-0 flex-1 px-4 py-3.5">{body}</div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                onSelect(row.id)
+              }}
+              className="hover:bg-surface-2 focus-visible:outline-text-2 min-w-0 flex-1 px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
+            >
+              {body}
+            </button>
+          )
+
+        const open = confirming === row.id
+
         return (
           <li key={row.id}>
-            {onSelect === undefined ? (
-              <div className="px-4 py-3.5">{body}</div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(row.id)
-                }}
-                className="hover:bg-surface-2 focus-visible:outline-text-2 w-full px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2"
-              >
-                {body}
-              </button>
+            <div className="flex items-start">
+              {main}
+              {onDelete === undefined ? null : (
+                <button
+                  type="button"
+                  aria-label={t('record.deleteNamed', { name: row.deleteLabel ?? '' }).trim()}
+                  aria-expanded={open}
+                  onClick={() => {
+                    setConfirming(open ? null : row.id)
+                  }}
+                  className={cn(
+                    'rounded-tile focus-visible:outline-text-2 mt-2.5 mr-2 flex size-10 shrink-0 items-center justify-center transition-colors focus-visible:outline-2',
+                    open ? 'text-danger' : 'text-text-3 hover:text-danger',
+                  )}
+                >
+                  <Trash2 aria-hidden className="size-4" />
+                </button>
+              )}
+            </div>
+
+            {onDelete === undefined || !open ? null : (
+              <div className="bg-surface-2 border-border flex flex-wrap items-center justify-end gap-2 border-t px-4 py-2.5">
+                <p className="text-caption text-text-2 mr-auto">{t('record.confirmDelete')}</p>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirming(null)
+                    }}
+                    className="rounded-button border-border text-text-2 hover:border-border-strong min-h-9 border px-3 text-sm"
+                  >
+                    {t('action.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirming(null)
+                      onDelete(row.id)
+                    }}
+                    className="rounded-button bg-danger min-h-9 px-3 text-sm font-medium text-white"
+                  >
+                    {t('action.delete')}
+                  </button>
+                </div>
+              </div>
             )}
           </li>
         )

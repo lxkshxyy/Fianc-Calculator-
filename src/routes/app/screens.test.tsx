@@ -14,7 +14,7 @@ import { PREVIEW_ALL } from '@/config/preview'
  * §11 Phases 5–8 gate: every module screen renders on seeded data, follows the
  * §9.4 pattern, and shows an empty state rather than crashing when cleared.
  *
- * Mounting all 24 through the real route table is what catches the failures a
+ * Mounting all 25 through the real route table is what catches the failures a
  * per-file test misses — a bad lazy import, a screen that reads a store before
  * it has loaded, a missing export after a rename.
  */
@@ -45,8 +45,8 @@ describe('every private route', () => {
     await useData.getState().resetToDemo()
   })
 
-  it('covers all 24 segments', () => {
-    expect(SEGMENTS.length).toBe(24)
+  it('covers all 25 segments', () => {
+    expect(SEGMENTS.length).toBe(25)
   })
 
   it.each(SEGMENTS)('/app/%s renders without crashing', async (segment) => {
@@ -104,8 +104,10 @@ describe('tier gating', () => {
     await useData.getState().saveProfile({ tier: 'silver' })
     await renderRoute('investments')
 
+    /* Found rather than got: the data can be ready while the lazy screen chunk is
+       still loading, which on a slower machine is long enough to miss it. */
+    expect(await screen.findByLabelText(/holdings/i, {}, { timeout: 5000 })).toBeInTheDocument()
     expect(crashed()).toBe(false)
-    expect(screen.getByLabelText(/holdings/i)).toBeInTheDocument()
   })
 
   /* Skipped while previewing, and runs again the moment the switch is flipped. */
@@ -129,7 +131,9 @@ describe('tier gating', () => {
     await useData.getState().saveProfile({ tier: 'diamond' })
     await renderRoute('investments')
 
+    /* Found rather than got: the data can be ready while the lazy screen chunk is
+       still loading, which on a slower machine is long enough to miss it. */
+    expect(await screen.findByLabelText(/holdings/i, {}, { timeout: 5000 })).toBeInTheDocument()
     expect(crashed()).toBe(false)
-    expect(screen.getByLabelText(/holdings/i)).toBeInTheDocument()
   })
 })

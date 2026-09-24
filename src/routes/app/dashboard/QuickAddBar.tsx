@@ -8,7 +8,7 @@ import { useData, useSnapshot } from '@/data/store/data'
 import type { TransactionKind } from '@/data/schema'
 import { todayIso } from '@/data/schema'
 import { parseQuickAdd, type QuickAddDraft } from '@/domain/quickadd'
-import { formatFull } from '@/lib/money'
+import { formatFull, isWithinAmountLimit } from '@/lib/money'
 
 /**
  * §9.1 item 2 and §9.2.
@@ -112,7 +112,7 @@ export function QuickAddBar() {
               onClick={() => {
                 void confirm()
               }}
-              disabled={amount === null || saving}
+              disabled={amount === null || !isWithinAmountLimit(amount) || saving}
               block
             >
               {saving ? 'Saving…' : 'Save'}

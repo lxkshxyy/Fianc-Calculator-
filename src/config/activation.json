@@ -1,0 +1,4 @@
+{
+  "_note": "Signs Diamond activation codes. scripts/diamond-code.mjs and src/lib/activation.ts both read this. Changing it invalidates every code already handed out.",
+  "secret": "U9fdxiZl_DiXV6n310z-rePks9FFMhks"
+}

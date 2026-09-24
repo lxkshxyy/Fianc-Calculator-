@@ -309,6 +309,7 @@ export function InsuranceReviewForm() {
       submittedAt: nowMs(),
       answers: { ...draft, attachments: draft.attachments.map((file) => file.name) },
       consentGivenAt: nowMs(),
+      delivery: 'queued',
     })
     clearDraft()
     setReference(ref)

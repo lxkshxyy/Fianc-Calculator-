@@ -79,7 +79,7 @@ const PUBLIC_ROUTES: RouteObject[] = [
 ].map((route) => ({ ...route, errorElement: <RouteErrorBoundary /> }))
 
 /**
- * The 24 private routes, generated from the one navigation table so §5.1 and §6
+ * The 25 private routes, generated from the one navigation table so §5.1 and §6
  * cannot drift apart. A segment with an entry in REAL_SCREENS gets its real
  * screen; everything else still resolves to the shared stub, so adding a screen
  * is one line here and never a change to the route table itself.
@@ -124,6 +124,7 @@ const REAL_SCREENS: Record<string, () => Promise<{ default: ComponentType }>> = 
 
   onboarding: () => import('@/routes/app/Onboarding').then((m) => ({ default: m.Onboarding })),
   upgrade: () => import('@/routes/app/Upgrade').then((m) => ({ default: m.Upgrade })),
+  profile: () => import('@/routes/app/tools/Profile').then((m) => ({ default: m.Profile })),
 }
 
 const PRIVATE_CHILDREN: RouteObject[] = [

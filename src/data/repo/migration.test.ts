@@ -121,3 +121,94 @@ describe('carrying data across the rename', () => {
     expect(snapshot.assets.find((row) => row.id === 'ass_old1')).toBeUndefined()
   })
 })
+
+/**
+ * v2 of the database adds the document file store. An install that has been
+ * running v1 — every phone the app is on today — has to open straight into v2
+ * with its household intact, and the records saved before upload and profile
+ * pictures existed have to read back rather than being dropped as invalid.
+ */
+describe('upgrading to the file store', () => {
+  beforeEach(async () => {
+    await Dexie.delete('wrc')
+    await Dexie.delete('prosperitypath')
+  })
+
+  it('keeps v1 records, and reads old documents and profiles with the new fields defaulted', async () => {
+    const v1 = openByName('wrc')
+    await v1.open()
+    await v1.table('singletons').put({
+      key: 'profile',
+      value: {
+        id: 'prof_1',
+        createdAt: 1,
+        updatedAt: 1,
+        displayName: 'Lakshay Sharma',
+        tier: 'silver',
+        stageId: 'clarity',
+        language: 'hi',
+        streakCount: 2,
+        lastCheckInDate: null,
+        dashboardLayout: null,
+        hiddenDashboardSections: [],
+      },
+    })
+    await v1.table('documents').put({
+      id: 'doc_old',
+      createdAt: 1,
+      updatedAt: 1,
+      name: 'Old policy.pdf',
+      kind: 'insurance-policy',
+      sizeBytes: 1000,
+      uploadedOn: '2026-01-02',
+      tags: [],
+    })
+    await v1.table('family').put({
+      id: 'fam_old',
+      createdAt: 1,
+      updatedAt: 1,
+      name: 'Asha',
+      relation: 'parent',
+      includeInHousehold: false,
+    })
+    v1.close()
+
+    const repo = new LocalRepository()
+    const snapshot = await repo.read()
+
+    expect(snapshot.profile.displayName).toBe('Lakshay Sharma')
+    expect(snapshot.profile.language).toBe('hi')
+    expect(snapshot.profile.avatar).toBeNull()
+    expect(snapshot.profile.phone).toBe('')
+
+    const document = snapshot.documents.find((row) => row.id === 'doc_old')
+    expect(document?.fileId).toBeNull()
+    expect(document?.scan).toBeNull()
+    expect(document?.delivery).toBe('local')
+
+    const member = snapshot.family.find((row) => row.id === 'fam_old')
+    expect(member?.dependent).toBe(false)
+    expect(member?.dateOfBirth).toBeNull()
+  })
+
+  /* fake-indexeddb cannot clone a jsdom Blob faithfully, so this checks the
+     table round-trip only; the bytes themselves are checked against the
+     in-memory store in local.test.ts, and in a real browser by hand. */
+  it('stores, returns and removes a document file', async () => {
+    const repo = new LocalRepository()
+    await repo.ready()
+    await repo.putFile('file_1', new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }))
+    expect(await repo.getFile('file_1')).not.toBeNull()
+
+    await repo.removeFile('file_1')
+    expect(await repo.getFile('file_1')).toBeNull()
+  })
+
+  it('clears files along with the records that pointed at them', async () => {
+    const repo = new LocalRepository()
+    await repo.ready()
+    await repo.putFile('file_2', new Blob(['x']))
+    await repo.clearEverything()
+    expect(await repo.getFile('file_2')).toBeNull()
+  })
+})

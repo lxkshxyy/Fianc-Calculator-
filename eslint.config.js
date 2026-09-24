@@ -37,7 +37,10 @@ const NO_PROCESS_ENV = {
 }
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', 'dev-dist'] },
+  /* `android/` holds a copy of the built bundle inside the native project, and
+     `_to_delete/` is parked files — neither is source, and linting either
+     buries the real result under hundreds of errors from minified code. */
+  { ignores: ['dist', 'node_modules', 'coverage', 'dev-dist', 'android', '_to_delete'] },
 
   /* TypeScript sources — type-aware linting, which is what §2.1.1 needs. */
   {

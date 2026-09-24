@@ -6,7 +6,7 @@ import { NumberField } from '@/components/ui/NumberField'
 import { TextField } from '@/components/ui/TextField'
 import { useT } from '@/i18n'
 import type { TranslationKey } from '@/i18n/en'
-import { parseAmount } from '@/lib/money'
+import { MAX_AMOUNT, formatCompact, isWithinAmountLimit, parseAmount } from '@/lib/money'
 
 /**
  * One form for every kind of record.
@@ -20,6 +20,11 @@ import { parseAmount } from '@/lib/money'
  * Every field reports its own error, and nothing is written until all of them
  * pass. A money field that cannot be parsed yields `null` rather than 0: a
  * silent zero in a finance app is a real amount, entered wrongly (§4.5).
+ *
+ * §4.5b's entry limit is enforced here rather than on each record's schema, and
+ * deliberately so: the schema also parses everything read back from storage, and
+ * a bound there would silently drop a record saved before the limit existed —
+ * data loss dressed up as validation. The limit belongs on the way in.
  */
 
 /**
@@ -109,6 +114,10 @@ export function RecordForm({
       const value = coerce(field, raw)
       if ((field.kind === 'money' || field.kind === 'number') && value === null) {
         local[field.name] = raw.trim() === '' ? '' : t('form.enterNumber')
+        continue
+      }
+      if (field.kind === 'money' && typeof value === 'number' && !isWithinAmountLimit(value)) {
+        local[field.name] = t('form.amountTooLarge', { max: formatCompact(MAX_AMOUNT) })
         continue
       }
       draft[field.name] = value
@@ -220,7 +229,7 @@ export function RecordForm({
 }
 
 /** A native select — it gets the platform's own picker on a phone, which no custom menu beats. */
-function SelectField({
+export function SelectField({
   label,
   value,
   options,

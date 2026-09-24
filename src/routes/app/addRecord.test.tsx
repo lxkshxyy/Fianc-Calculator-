@@ -147,3 +147,40 @@ describe('entering your own data', () => {
     expect(useData.getState().snapshot?.incomeSources ?? []).toHaveLength(0)
   })
 })
+
+describe('the limits on what can be entered and what can be removed', () => {
+  beforeEach(async () => {
+    useSession.setState({ signedIn: true })
+    useData.setState({ status: 'idle', snapshot: null, error: null })
+    await useData.getState().clearEverything()
+  })
+
+  it('refuses an asset value past twelve digits instead of saving it', async () => {
+    const user = userEvent.setup()
+    await user.click(await open('assets', /add asset/i))
+    await user.type(screen.getByLabelText(/^name$/i), 'Typo')
+    await user.type(screen.getByLabelText(/current value/i), '9999999999999')
+    await user.click(screen.getByRole('button', { name: /save asset/i }))
+
+    expect(await screen.findByText(/too large/i)).toBeInTheDocument()
+    expect(useData.getState().snapshot?.assets).toHaveLength(0)
+  })
+
+  it('removes one asset and leaves the rest alone', async () => {
+    const create = useData.getState().create
+    await create('assets', { name: 'Gold', kind: 'gold', value: 400_000, nominee: null })
+    await create('assets', { name: 'HDFC savings', kind: 'bank', value: 90_000, nominee: null })
+
+    const user = userEvent.setup()
+    await open('assets', /add asset/i)
+
+    await user.click(await screen.findByRole('button', { name: /delete gold/i }))
+    /* The bin only asks; the plain "Delete" in the confirm strip is what acts. */
+    await user.click(screen.getByRole('button', { name: /^delete$/i }))
+
+    await waitFor(() => {
+      expect(useData.getState().snapshot?.assets).toHaveLength(1)
+    })
+    expect(useData.getState().snapshot?.assets[0]?.name).toBe('HDFC savings')
+  })
+})

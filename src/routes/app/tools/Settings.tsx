@@ -1,14 +1,25 @@
-import { Database, Languages, Palette, Settings as SettingsIcon, ShieldAlert } from 'lucide-react'
+import {
+  ChevronRight,
+  Database,
+  Gem,
+  KeyRound,
+  Palette,
+  Settings as SettingsIcon,
+  ShieldAlert,
+} from 'lucide-react'
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
+import { APP_BASE } from '@/app/nav/navigation'
 import { AppButton } from '@/components/ui/AppButton'
+import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { Sheet } from '@/components/ui/Sheet'
 import { TierBadge } from '@/components/ui/TierBadge'
-import { useData, useProfile } from '@/data/store/data'
+import { hasServer } from '@/config/server'
+import { useData, useProfile, useSnapshot } from '@/data/store/data'
 import { useT } from '@/i18n'
 import type { TranslationKey } from '@/i18n/en'
-import type { Language } from '@/data/schema/profile'
 import { useSession } from '@/data/store/session'
 import { THEME_PREFERENCES, useTheme, type ThemePreference } from '@/lib/theme'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
@@ -19,29 +30,24 @@ const THEME_LABEL: Record<ThemePreference, TranslationKey> = {
   system: 'settings.theme.system',
 }
 
-/**
- * The language names are NOT translated.
- *
- * Every picker of this kind writes each option in its own language, because the
- * person looking for Hindi is looking for the word "हिन्दी" — not for whatever
- * the current language calls Hindi. Translating these would hide the option
- * from the only people who need it.
- */
-const LANGUAGE_LABEL: Record<Language, string> = {
-  en: 'English',
-  hi: 'हिन्दी',
-}
-
 export function Settings() {
   const t = useT()
   const profile = useProfile()
   const saveProfile = useData((state) => state.saveProfile)
   const clearEverything = useData((state) => state.clearEverything)
   const signOut = useSession((state) => state.signOut)
+  const email = useSession((state) => state.account?.email ?? '')
+  const snapshot = useSnapshot()
+  const navigate = useNavigate()
   const { preference, setPreference } = useTheme()
   const [confirmClear, setConfirmClear] = useState(false)
 
   if (profile === null) return null
+
+  const upgradePending =
+    snapshot?.requests.some(
+      (request) => request.service === 'diamond-upgrade' && request.status !== 'closed',
+    ) ?? false
 
   return (
     <ModuleScreen
@@ -49,13 +55,35 @@ export function Settings() {
       subtitle={t('screen.settings.subtitle')}
       icon={SettingsIcon}
     >
+      <ModuleSection label={t('settings.profile')}>
+        <Link
+          to={`${APP_BASE}/profile`}
+          className="rounded-card border-border bg-surface p-card hover:bg-surface-2 focus-visible:outline-text-2 flex items-center gap-3 border transition-colors focus-visible:outline-2"
+        >
+          <Avatar avatar={profile.avatar} name={profile.displayName} size={48} />
+          <span className="min-w-0 flex-1">
+            <span className="text-text block truncate font-medium">{profile.displayName}</span>
+            <span className="text-caption text-text-2 block truncate">
+              {email === '' ? t('settings.profileLine') : email}
+            </span>
+          </span>
+          <ChevronRight aria-hidden className="text-text-3 size-4 shrink-0" />
+        </Link>
+      </ModuleSection>
+
       <ModuleSection label={t('settings.membership')}>
         <Card>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex-1">
-              <p className="text-text font-medium">{profile.displayName}</p>
+              <p className="text-text font-medium">
+                {profile.tier === 'diamond' ? 'Diamond' : 'Silver'}
+              </p>
               <p className="text-caption text-text-2">
-                {profile.tier === 'diamond' ? t('settings.allStages') : t('settings.twoStages')}
+                {profile.tier === 'diamond'
+                  ? t('settings.allStages')
+                  : upgradePending
+                    ? t('settings.upgradePendingLine')
+                    : t('settings.twoStages')}
               </p>
             </div>
             <TierBadge tier={profile.tier} />
@@ -77,6 +105,23 @@ export function Settings() {
               </AppButton>
             ) : null}
           </div>
+          {profile.tier === 'diamond' ? null : (
+            <AppButton
+              variant="primary"
+              block
+              className="mt-4"
+              onClick={() => {
+                void navigate(`${APP_BASE}/upgrade`)
+              }}
+            >
+              {upgradePending ? (
+                <KeyRound aria-hidden className="size-4" />
+              ) : (
+                <Gem aria-hidden className="size-4" />
+              )}
+              {upgradePending ? t('settings.upgradePending') : t('settings.upgrade')}
+            </AppButton>
+          )}
         </Card>
       </ModuleSection>
 
@@ -107,40 +152,14 @@ export function Settings() {
         </Card>
       </ModuleSection>
 
-      <ModuleSection label={t('settings.language')}>
-        <Card>
-          <div className="flex items-center gap-2.5">
-            <Languages aria-hidden className="text-text-2 size-4" />
-            <div className="flex gap-2">
-              {(['en', 'hi'] as const).map((language) => (
-                <button
-                  key={language}
-                  type="button"
-                  onClick={() => {
-                    void saveProfile({ language })
-                  }}
-                  aria-pressed={profile.language === language}
-                  className={
-                    profile.language === language
-                      ? 'bg-gold text-on-gold rounded-full px-3 py-1.5 text-sm font-medium'
-                      : 'border-border text-text-2 hover:border-border-strong rounded-full border px-3 py-1.5 text-sm'
-                  }
-                >
-                  {LANGUAGE_LABEL[language]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-caption text-text-3 mt-3">{t('settings.languageNote')}</p>
-        </Card>
-      </ModuleSection>
-
       <ModuleSection label={t('settings.yourData')}>
         <Card>
           <div className="flex items-start gap-3">
             <Database aria-hidden className="text-text-2 mt-0.5 size-4 shrink-0" />
             <div className="flex-1">
-              <p className="text-text-2 text-sm">{t('settings.storedLocally')}</p>
+              <p className="text-text-2 text-sm">
+                {t(hasServer() ? 'settings.storedWithServer' : 'settings.storedLocally')}
+              </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {/*
                  * Not a build aid — this is the only way somebody can delete

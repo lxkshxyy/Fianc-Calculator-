@@ -16,6 +16,27 @@ const THOUSAND = 1_000
 const LAKH = 100_000
 const CRORE = 10_000_000
 
+/**
+ * §4.5b — the two digit limits that keep a figure inside the card it is drawn in.
+ *
+ * Indian grouping adds a separator every two digits above the thousand, so a
+ * rupee string grows faster than the value does. At ten digits (₹9,99,99,99,999)
+ * an exact figure is already as wide as a phone; past that it pushes the page
+ * sideways whatever the font size. So ten digits is where an amount stops being
+ * rendered exactly and starts being rendered rounded, and twelve — ₹1,00,000 Cr,
+ * far beyond any household balance sheet — is the most that can be entered.
+ *
+ * Both are digit counts rather than magic numbers so the intent survives a read.
+ */
+export const MAX_DISPLAY_DIGITS = 10
+export const MAX_INPUT_DIGITS = 12
+
+/** The largest amount rendered to the rupee: ₹9,99,99,99,999. */
+const MAX_EXACT = 10 ** MAX_DISPLAY_DIGITS - 1
+
+/** The largest amount that can be entered: ₹9,99,99,99,99,999 (about ₹1,00,000 Cr). */
+export const MAX_AMOUNT = 10 ** MAX_INPUT_DIGITS - 1
+
 /** Anything a screen might hand us, including the `null` §8.4 returns for a guarded ratio. */
 export type Amount = number | null | undefined
 
@@ -94,7 +115,14 @@ function compactBody(abs: number): string {
     // 99,97,000 → 100.0 L → promote to crore. Falls through deliberately.
   }
 
-  return `${groupCrore.format(roundHalfUp(abs / CRORE, CRORE_DECIMALS))} Cr`
+  /*
+   * Past MAX_DISPLAY_DIGITS the decimals go. At ₹1,000 Cr a hundredth of a crore
+   * is noise, and those three characters are exactly what tips a hero figure out
+   * of its card on a narrow phone.
+   */
+  const decimals = abs > MAX_EXACT ? 0 : CRORE_DECIMALS
+  const crores = roundHalfUp(abs / CRORE, decimals)
+  return `${(decimals === 0 ? groupWhole : groupCrore).format(crores)} Cr`
 }
 
 /**
@@ -104,7 +132,19 @@ function compactBody(abs: number): string {
 export function formatCompact(value: Amount): string {
   if (!isRenderableAmount(value)) return EM_DASH
   const sign = value < 0 ? '-' : ''
-  return `${sign}₹${compactBody(Math.abs(value))}`
+  const abs = Math.abs(value)
+
+  /*
+   * Above the entry limit the figure is not something anyone typed today — it is
+   * a record saved before the limit existed, or a slipped decimal. Rendering the
+   * ceiling with a "more than" marker keeps the card intact and is honest about
+   * what is being withheld; the exact figure stays on the title attribute.
+   */
+  if (abs > MAX_AMOUNT) {
+    return `${value < 0 ? '<' : '>'}${sign}₹${compactBody(MAX_AMOUNT)}`
+  }
+
+  return `${sign}₹${compactBody(abs)}`
 }
 
 /**
@@ -113,6 +153,14 @@ export function formatCompact(value: Amount): string {
  */
 export function formatFull(value: Amount): string {
   if (!isRenderableAmount(value)) return EM_DASH
+  /* §4.5b — past ten digits there is no exact form that fits, so the rounded one
+     is what gets shown, wherever the caller asked for `full`. */
+  if (roundHalfUp(Math.abs(value), 0) > MAX_EXACT) return formatCompact(value)
+  return grouped(value)
+}
+
+/** Indian grouping to the rupee, with no width limit. */
+function grouped(value: number): string {
   const sign = value < 0 ? '-' : ''
   return `${sign}₹${groupWhole.format(roundHalfUp(Math.abs(value), 0))}`
 }
@@ -122,7 +170,13 @@ export function formatFull(value: Amount): string {
  * precise amount stays reachable when the visible text says "₹15.7 L".
  */
 export function formatExact(value: Amount): string {
-  return formatFull(value)
+  if (!isRenderableAmount(value)) return EM_DASH
+  return grouped(value)
+}
+
+/** Whether an entered amount is inside the §4.5b entry limit. */
+export function isWithinAmountLimit(value: number): boolean {
+  return Number.isFinite(value) && Math.abs(value) <= MAX_AMOUNT
 }
 
 /** §4.2 — hero figures are coloured by sign; `unknown` renders the em dash. */

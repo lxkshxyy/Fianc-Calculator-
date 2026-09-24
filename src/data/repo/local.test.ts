@@ -158,5 +158,19 @@ describe('LocalRepository', () => {
       }),
     ).rejects.toThrow()
   })
+
+  it('keeps a document file byte for byte, apart from the records', async () => {
+    const repo = fresh()
+    await repo.ready()
+    await repo.putFile('file_1', new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }))
+    const stored = await repo.getFile('file_1')
+    expect(stored?.size).toBe(13)
+    expect(await stored?.text()).toBe('%PDF-1.4 test')
+    /* Files are never part of the snapshot every screen reads. */
+    expect(JSON.stringify(await repo.read())).not.toContain('%PDF-1.4 test')
+
+    await repo.removeFile('file_1')
+    expect(await repo.getFile('file_1')).toBeNull()
+  })
 })
 

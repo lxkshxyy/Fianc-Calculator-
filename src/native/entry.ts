@@ -1,4 +1,4 @@
-import { isNativeApp } from './platform'
+import { isNativeApp, stampShell } from './platform'
 
 /**
  * Where the Android app opens.
@@ -22,3 +22,10 @@ import { isNativeApp } from './platform'
 if (isNativeApp() && window.location.pathname === '/') {
   window.history.replaceState(null, '', '/app/dashboard')
 }
+
+/*
+ * Stamped here rather than in main.tsx for the same reason as the line above:
+ * this module runs before the first render, so the first paint already has the
+ * right attribute and no header is drawn at the browser size and then resized.
+ */
+stampShell()

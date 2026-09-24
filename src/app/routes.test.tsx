@@ -9,12 +9,23 @@
  * the spec's test scoping is meant to be exhaustive.
  */
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from 'vitest'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 
 import { routes } from './router'
 import { allPrivateRouteSegments } from './nav/navigation'
 import { useSession } from '@/data/store/session'
+import { createPasscode, type Passcode } from '@/lib/passcode'
 
 const PUBLIC_PATHS = [
   '/',
@@ -24,6 +35,7 @@ const PUBLIC_PATHS = [
   '/about',
   '/contact',
   '/auth',
+  '/auth?mode=login',
   '/auth?mode=signup',
   '/forgot-password',
   '/legal/privacy',
@@ -34,6 +46,15 @@ const PUBLIC_PATHS = [
 const PRIVATE_PATHS = allPrivateRouteSegments().map((segment) => '/app/' + segment)
 
 let errorSpy: MockInstance<typeof console.error>
+
+/* Hashed once: PBKDF2 is deliberately slow, and four redirect cases do not each
+   need to pay for it. */
+const PASSWORD = 'correct horse'
+let passcode: Passcode
+
+beforeAll(async () => {
+  passcode = await createPasscode(PASSWORD)
+})
 
 beforeEach(() => {
   errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -55,8 +76,8 @@ async function renderAt(path: string): Promise<void> {
 }
 
 describe('every route resolves', () => {
-  it('counts 24 private routes', () => {
-    expect(PRIVATE_PATHS).toHaveLength(24)
+  it('counts 25 private routes', () => {
+    expect(PRIVATE_PATHS).toHaveLength(25)
   })
 
   it.each(PUBLIC_PATHS)('resolves %s with no console error', async (path) => {
@@ -99,23 +120,33 @@ describe('the §6 guard', () => {
     ['/\\evil.com', '/app/dashboard'],
     ['/app/budget', '/app/budget'],
   ])('sends redirectTo=%s to %s', async (requested, expected) => {
-    /* An account exists but is signed out — the state that shows a Sign in
-       button. With no account at all the screen offers sign-up instead. */
+    /* An account exists but is signed out — the state the log-in form is for.
+       With no account at all the screen offers sign-up instead. */
     useSession.setState({
       signedIn: false,
-      account: { displayName: 'Test', email: 'test@example.com', createdAt: '2026-01-01' },
+      remember: true,
+      account: {
+        displayName: 'Test',
+        email: 'test@example.com',
+        createdAt: '2026-01-01',
+        passcode,
+      },
     })
+    const user = userEvent.setup()
     const router = createMemoryRouter(routes, {
-      initialEntries: ['/auth?redirectTo=' + encodeURIComponent(requested)],
+      initialEntries: ['/auth?mode=login&redirectTo=' + encodeURIComponent(requested)],
     })
     render(<RouterProvider router={router} />)
 
-    const button = await screen.findByRole('button', { name: 'Sign in' })
-    button.click()
+    await user.type(await screen.findByLabelText(/^password$/i), PASSWORD)
+    await user.click(screen.getByRole('button', { name: /^log in$/i }))
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(expected)
-    })
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe(expected)
+      },
+      { timeout: 5000 },
+    )
     expect(errorSpy).not.toHaveBeenCalled()
   })
 

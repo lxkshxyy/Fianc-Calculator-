@@ -20,11 +20,17 @@
  *   system light + dark       -> media block is guarded by :not([data-theme="dark"]),
  *                                so it does not match; :root wins (dark)
  *
- * ── Palette: near-black and gold ────────────────────────────────────────────
- * A violet theme was trialled here and reverted. What survived is the naming:
- * --accent is the brand colour by role rather than by hue, and --gold remains
- * as its alias so every existing `text-gold` / `bg-gold` keeps working. Swapping
- * the palette again is a change to this file alone.
+ * ── Palette: near-black and WRC green ───────────────────────────────────────
+ * A violet theme was trialled here, then gold shipped, and the brand landed on
+ * green. Each swap was this file and nothing else, which is the whole point of
+ * naming the token by role: --accent is "the brand colour", not "the gold one",
+ * and --gold survives as its alias so every existing `text-gold` / `bg-gold`
+ * keeps working rather than needing a codemod through 24 screens.
+ *
+ * Rewards are the one thing that did NOT follow. Points, coins and streaks stay
+ * gold — see --reward below. A coin is gold everywhere a person has ever seen
+ * one, and painting it the brand colour would make earning one look like every
+ * other button in the app.
  */
 
 :root {
@@ -42,13 +48,13 @@
   --text-label: #868f96;
   --text-3: #6b757c;
 
-  --accent: #e8b448;
-  --accent-strong: #f3c766;
-  --accent-dim: #7a5e24;
-  --on-accent: #0a0b0c;
+  --accent: #43c17f; /* 8.60:1 on --bg, 7.32:1 on --surface-2, the worst ground */
+  --accent-strong: #6ad79b; /* hover; 11.07:1 on --bg */
+  --accent-dim: #1d5c40; /* the deep brand green, for dimmed borders and washes */
+  --on-accent: #06130c; /* 8.29:1 over --accent — near-black on green, never white (2.29:1) */
 
-  /* Points, coins and streaks. The same gold here — one brand colour, and this
-     token is what keeps rewards independent of the accent if they ever diverge. */
+  /* Points, coins and streaks. This is the divergence that token was written
+     for: the accent went green, a coin stayed gold. 8.82:1 on the worst ground. */
   --reward: #e8b448;
   --reward-dim: #7a5e24;
   --on-reward: #0a0b0c;
@@ -88,8 +94,9 @@
  * these are derived and contrast-measured rather than eyeballed. Every one of
  * --text, --text-2, --text-label and the four semantic hues clears 4.5:1 on all
  * three grounds (--bg, --surface, --surface-2); --accent clears 4.5:1 as text and
- * carries white at 5.68:1 as a fill. The dark accent (#E8B448) is 1.8:1 on white
- * and cannot survive the flip, so light gold is darkened rather than reused.
+ * carries white at 6.66:1 as a fill. The dark accent (#43C17F) is 1.9:1 on white
+ * and cannot survive the flip, so the light green is a darker one rather than
+ * the same value reused.
  */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
@@ -107,9 +114,9 @@
     --text-label: #5d6870;
     --text-3: #98a2a9;
 
-    --accent: #8b5e00;
-    --accent-strong: #6b4a00;
-    --accent-dim: #e8ce92;
+    --accent: #16694a; /* 5.93:1 on the worst light ground; white on it is 6.66:1 */
+    --accent-strong: #0e5238; /* hover; white on it is 9.20:1 */
+    --accent-dim: #b9ddcb;
     --on-accent: #ffffff;
 
     --reward: #8b5e00;
@@ -152,9 +159,9 @@
   --text-label: #5d6870;
   --text-3: #98a2a9;
 
-  --accent: #8b5e00;
-  --accent-strong: #6b4a00;
-  --accent-dim: #e8ce92;
+  --accent: #16694a; /* 5.93:1 on the worst light ground; white on it is 6.66:1 */
+  --accent-strong: #0e5238; /* hover; white on it is 9.20:1 */
+  --accent-dim: #b9ddcb;
   --on-accent: #ffffff;
 
   --reward: #8b5e00;

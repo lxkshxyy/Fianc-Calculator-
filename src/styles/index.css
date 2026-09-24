@@ -76,7 +76,10 @@
   --text-title: 1.25rem;
   --text-heading: 1.5rem;
   --text-page: 2.125rem;
-  --text-hero: 2.75rem;
+  /* Fluid: a hero figure is the widest string in the app and a 360px phone is
+     the narrowest ground it lands on. Fixed at 2.75rem, "₹1,00,000 Cr" runs off
+     the card; clamped, it scales down to fit and never grows past the design. */
+  --text-hero: clamp(1.875rem, 8.5vw, 2.75rem);
 
   /* §4.3b — density-driven spacing. `p-card`, `space-y-section` and `gap-grid`
      follow whatever data-density is on <html>, so one switch respaces the app. */
@@ -251,9 +254,27 @@
   }
 }
 
-/* The light theme's groove is a dent in paper, not a hole in metal. */
-:root[data-theme='light'] .meter-track,
-:root:not([data-theme='dark']) .meter-track {
+/*
+ * The light theme's groove is a dent in paper, not a hole in metal.
+ *
+ * ── Why the media query, every time ─────────────────────────────────────────
+ * `:root:not([data-theme='dark'])` on its own is not "light". It matches the
+ * default state too — the one where nothing is stamped and the system is dark —
+ * so an unwrapped rule applies its light treatment on a near-black ground. It
+ * has to be paired with the media query, exactly as tokens.css pairs them, and
+ * the explicit `[data-theme='light']` rule is what covers somebody who chose
+ * light while their system is dark. Two selectors, one for each way of being
+ * light; neither one alone.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .meter-track {
+    box-shadow:
+      inset 0 1px 2px rgb(0 0 0 / 12%),
+      inset 0 -1px 0 rgb(255 255 255 / 60%);
+  }
+}
+
+:root[data-theme='light'] .meter-track {
   box-shadow:
     inset 0 1px 2px rgb(0 0 0 / 12%),
     inset 0 -1px 0 rgb(255 255 255 / 60%);
@@ -269,6 +290,421 @@
 
 .reveal .ring-fill {
   animation: ring-fill 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/*
+ * The greeting is the one heading that carries somebody's name, so it is the one
+ * that can outgrow the bar it sits in. A browser tab has the width for 34px; the
+ * app shell — 360-412 CSS px, with a tier chip and a menu button beside it — does
+ * not, and the half that gets cut is the name, which is the half worth showing.
+ *
+ * Small in the app only. `data-shell` is stamped on <html> at boot, so the web
+ * build renders exactly as it did. Unlayered on purpose: a plain rule beats a
+ * Tailwind utility, which is what lets it override `text-page` without !important.
+ */
+html[data-shell='native'] .app-greeting {
+  font-size: var(--text-lead);
+  line-height: 1.35;
+}
+
+/*
+ * §4.6b — the tier chip, lit the same way the meters are.
+ *
+ * "3D" is light, not geometry, here too: a vertical gradient turns the pill into
+ * a curved metal surface, a bright inset along the top edge and a dark one along
+ * the bottom give it thickness, and a small cast shadow lifts it off the header.
+ * The sheen is what makes it read as metal rather than as a coloured rectangle —
+ * a skewed white band that crosses the face and then waits four seconds.
+ *
+ * The band passes over the icon and the label rather than behind them, which is
+ * how a real highlight behaves; it is held under 60% white so the text never
+ * drops out of contrast as it goes by.
+ */
+.tier-chip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background-image: linear-gradient(
+    180deg,
+    var(--tier-top) 0%,
+    var(--tier-mid) 52%,
+    var(--tier-base) 100%
+  );
+  color: var(--tier-ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    inset 0 -1px 0 rgb(0 0 0 / 25%),
+    0 1px 3px rgb(0 0 0 / 40%);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 30%);
+}
+
+.tier-chip::after {
+  content: '';
+  position: absolute;
+  inset: -50% -60%;
+  background: linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 58%) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: tier-sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/*
+ * Most of the cycle is the wait. A highlight that swept continuously would be a
+ * loading bar; one that catches the light every few seconds is a surface.
+ */
+@keyframes tier-sheen {
+  0%,
+  64% {
+    transform: translateX(-120%);
+  }
+  88%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.tier-silver {
+  --tier-top: #ffffff;
+  --tier-mid: #d6dee5;
+  --tier-base: #9dabb6;
+  --tier-ink: #1b2126;
+}
+
+.tier-diamond {
+  --tier-top: #ffe9b4;
+  --tier-mid: #e8b448;
+  --tier-base: #a97a14;
+  --tier-ink: #2a1c00;
+}
+
+/*
+ * On a white header the chip needs an edge of its own: the same white top
+ * highlight that separates it from near-black has nothing to separate it from
+ * paper, so the metal darkens a step and the cast shadow softens.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .tier-chip {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 85%),
+      inset 0 -1px 0 rgb(0 0 0 / 18%),
+      0 1px 2px rgb(0 0 0 / 20%),
+      0 0 0 1px rgb(0 0 0 / 8%);
+  }
+
+  :root:not([data-theme='dark']) .tier-silver {
+    --tier-top: #f5f8fa;
+    --tier-mid: #c2ccd5;
+    --tier-base: #8a97a3;
+  }
+}
+
+:root[data-theme='light'] .tier-chip {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    inset 0 -1px 0 rgb(0 0 0 / 18%),
+    0 1px 2px rgb(0 0 0 / 20%),
+    0 0 0 1px rgb(0 0 0 / 8%);
+}
+
+:root[data-theme='light'] .tier-silver {
+  --tier-top: #f5f8fa;
+  --tier-mid: #c2ccd5;
+  --tier-base: #8a97a3;
+}
+
+/*
+ * §6b — the account screens.
+ *
+ * The one place in the app that is not near-black: a new install's first screen
+ * has to say what the product is before it says anything else, and a wall of
+ * charcoal says "utility". These are the brand's own greens on a soft ground,
+ * and every value is a token or derived from one, so the dark theme is not a
+ * second design — it is the same drawing with the ground swapped underneath it.
+ *
+ * `color-mix` throughout rather than fixed hex: change --accent in tokens.css
+ * and the hills, the leaves and the washes all follow it, which is the whole
+ * reason the palette swap was one file.
+ */
+.auth-sky {
+  /* The pale band the hills run out onto, and the ground the buttons stand on.
+     One value, read by the CSS below and by the last path in GrowthScene. */
+  --auth-ground: var(--bg-elevated);
+  background:
+    radial-gradient(
+      120% 80% at 80% 0%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      100% 60% at 0% 100%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(170deg, var(--bg-elevated) 0%, var(--bg) 55%, var(--bg-elevated) 100%);
+}
+
+/* The reference is cream at the top and mint below. Both ways of being light. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .auth-sky {
+    --auth-ground: #f4f8f3;
+    background:
+      radial-gradient(
+        120% 80% at 82% -6%,
+        color-mix(in srgb, var(--accent) 22%, transparent),
+        transparent 66%
+      ),
+      radial-gradient(
+        90% 55% at -10% 104%,
+        color-mix(in srgb, var(--accent) 18%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(168deg, #fbfaf0 0%, #eef6ef 46%, #e4f0e8 100%);
+  }
+}
+
+:root[data-theme='light'] .auth-sky {
+  --auth-ground: #f4f8f3;
+  background:
+    radial-gradient(
+      120% 80% at 82% -6%,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      transparent 66%
+    ),
+    radial-gradient(
+      90% 55% at -10% 104%,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(168deg, #fbfaf0 0%, #eef6ef 46%, #e4f0e8 100%);
+}
+
+/* Two washes, placed rather than tiled, so the corners are not empty. */
+.auth-blob,
+.auth-blob-2 {
+  filter: blur(46px);
+  opacity: 0.5;
+}
+
+.auth-blob {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 55%, transparent),
+    transparent 68%
+  );
+}
+
+.auth-blob-2 {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-strong) 42%, transparent),
+    transparent 70%
+  );
+}
+
+/*
+ * The form card and its fields.
+ *
+ * Glass rather than a flat surface: the hills and the washes are behind it, and
+ * hiding them entirely under an opaque panel would leave the screen looking
+ * like the rest of the app with a picture stuck above it.
+ */
+.auth-card,
+.auth-glass {
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow: 0 18px 40px -24px rgb(0 0 0 / 45%);
+}
+
+.auth-input {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+/* The scene. Each token here is the accent at a different depth. */
+.auth-sun {
+  fill: color-mix(in srgb, var(--reward) 18%, transparent);
+}
+
+.auth-bar {
+  fill: color-mix(in srgb, var(--accent) 88%, transparent);
+}
+
+.auth-line {
+  stroke: var(--accent);
+}
+
+.auth-leaf {
+  fill: color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+.auth-leaf-2 {
+  fill: var(--accent);
+}
+
+.auth-hill-3 {
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.auth-hill-2 {
+  fill: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.auth-hill-1 {
+  fill: color-mix(in srgb, var(--accent) 66%, transparent);
+}
+
+.auth-ground-fill {
+  fill: var(--auth-ground);
+}
+
+.auth-ground {
+  background: var(--auth-ground);
+}
+
+/*
+ * §6c — the welcome screen, which is the brand board itself.
+ *
+ * ── The geometry, and why it is written in percentages ──────────────────────
+ * The board is 941 x 1671, and the two pills are painted into it at fixed
+ * fractions of that. Giving the box the image's own aspect ratio makes those
+ * fractions hold at every width: the overlay links land on the paint on a 360px
+ * phone and on a 448px one without anything being measured at runtime. Change
+ * the artwork and these four numbers are what has to change with it.
+ *
+ *   Log In   pill   y 1357-1446   x 166-775
+ *   Sign Up  pill   y 1476-1566   x 166-775
+ *
+ * The hit areas are taller than the paint on purpose — see SplashHit.
+ */
+.splash {
+  position: relative;
+  overflow: hidden;
+  background: var(--splash-ground);
+}
+
+/*
+ * ── Two ways to fit a board to a screen, and the one line that picks ────────
+ * Wider screen than the board: the board takes the full width and the page
+ * continues below it in the colour the board ends on.
+ *
+ * Narrower screen than the board — which is every phone — filling the width
+ * would leave a quarter of the screen as flat colour under the buttons. So the
+ * board is scaled to the screen's *height* instead and overflows the sides,
+ * where there is nothing but background to lose: the artwork keeps its 12% of
+ * margin around the mark and the tagline at every ratio a phone actually has.
+ *
+ * `max-aspect-ratio` is the exact question being asked, so it is the query used
+ * rather than a width breakpoint standing in for it.
+ */
+.splash-board {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  aspect-ratio: 941 / 1671;
+  transform: translateX(-50%);
+}
+
+@media (max-aspect-ratio: 941 / 1671) {
+  .splash-board {
+    width: auto;
+    height: 100%;
+  }
+}
+
+.splash-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/*
+ * One file per theme, swapped in CSS rather than in React.
+ *
+ * `data-theme` is stamped only for an explicit choice, so "light" is the media
+ * query and the attribute together — the same pairing tokens.css uses, and the
+ * same one that put a cream screen under a dark palette when it was written as
+ * a bare `:not([data-theme='dark'])`.
+ */
+.splash-art-light {
+  display: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .splash-art-light {
+    display: block;
+  }
+
+  :root:not([data-theme='dark']) .splash-art-dark {
+    display: none;
+  }
+}
+
+:root[data-theme='light'] .splash-art-light {
+  display: block;
+}
+
+:root[data-theme='light'] .splash-art-dark {
+  display: none;
+}
+
+/* The colour each board ends on, so the page continues it rather than cutting it. */
+.splash {
+  --splash-ground: #020202;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .splash {
+    --splash-ground: #f0f2e4;
+  }
+}
+
+:root[data-theme='light'] .splash {
+  --splash-ground: #f0f2e4;
+}
+
+/*
+ * The links over the painted pills.
+ *
+ * Invisible by design: the image is the button. What that must not cost is a
+ * focus ring or a sense that the press registered, so both are here — an
+ * outline on the pill's own shape, and a brief wash on press.
+ */
+.splash-hit {
+  position: absolute;
+  left: 17.64%;
+  width: 64.72%;
+  border-radius: 999px;
+  transition: background-color 120ms ease-out;
+}
+
+.splash-hit:active {
+  background-color: rgb(255 255 255 / 16%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .splash-hit:active {
+    background-color: rgb(0 0 0 / 10%);
+  }
+}
+
+:root[data-theme='light'] .splash-hit:active {
+  background-color: rgb(0 0 0 / 10%);
+}
+
+/* 1350 -> 1461 and 1461 -> 1572 of 1671: the paint, plus the gap around it. */
+.splash-hit-login {
+  top: 80.79%;
+  height: 6.64%;
+}
+
+.splash-hit-signup {
+  top: 87.43%;
+  height: 6.64%;
 }
 
 @media (prefers-reduced-motion: reduce) {

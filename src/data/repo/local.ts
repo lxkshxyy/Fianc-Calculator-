@@ -82,6 +82,8 @@ const TAX_PROFILE_KEY = 'taxProfile'
 
 type SingletonRow = { key: string; value: unknown }
 
+type FileRow = { id: string; blob: Blob }
+
 /* ------------------------------------------------------------------ *
  * Storage adapters
  * ------------------------------------------------------------------ */
@@ -94,11 +96,16 @@ interface Storage {
   getSingleton(key: string): Promise<unknown>
   putSingleton(key: string, value: unknown): Promise<void>
   isEmpty(): Promise<boolean>
+  putFile(id: string, blob: Blob): Promise<void>
+  getFile(id: string): Promise<Blob | null>
+  deleteFile(id: string): Promise<void>
+  clearFiles(): Promise<void>
 }
 
 class MemoryStorage implements Storage {
   private readonly tables = new Map<CollectionName, unknown[]>()
   private readonly singletons = new Map<string, unknown>()
+  private readonly files = new Map<string, Blob>()
 
   all(name: CollectionName): Promise<unknown[]> {
     return Promise.resolve([...(this.tables.get(name) ?? [])])
@@ -140,6 +147,25 @@ class MemoryStorage implements Storage {
   isEmpty(): Promise<boolean> {
     return Promise.resolve(this.singletons.size === 0)
   }
+
+  putFile(id: string, blob: Blob): Promise<void> {
+    this.files.set(id, blob)
+    return Promise.resolve()
+  }
+
+  getFile(id: string): Promise<Blob | null> {
+    return Promise.resolve(this.files.get(id) ?? null)
+  }
+
+  deleteFile(id: string): Promise<void> {
+    this.files.delete(id)
+    return Promise.resolve()
+  }
+
+  clearFiles(): Promise<void> {
+    this.files.clear()
+    return Promise.resolve()
+  }
 }
 
 const DB_NAME = 'wrc'
@@ -154,10 +180,18 @@ function storeDefinitions(): Record<string, string> {
 
 class WrcDatabase extends Dexie {
   declare singletons: Table<SingletonRow, string>
+  declare files: Table<FileRow, string>
 
   constructor(name: string = DB_NAME) {
     super(name)
     this.version(1).stores(storeDefinitions())
+    /*
+     * v2 adds the document file store and changes nothing else. Dexie carries
+     * every v1 table across untouched, so an existing install upgrades in place
+     * with all its records — there is no upgrade function because there is
+     * nothing to transform.
+     */
+    this.version(2).stores({ files: 'id' })
   }
 
   table_(name: CollectionName): Table<unknown, string> {
@@ -233,6 +267,23 @@ class DexieStorage implements Storage {
   async isEmpty(): Promise<boolean> {
     const count = await this.db.singletons.count()
     return count === 0
+  }
+
+  async putFile(id: string, blob: Blob): Promise<void> {
+    await this.db.files.put({ id, blob })
+  }
+
+  async getFile(id: string): Promise<Blob | null> {
+    const row = await this.db.files.get(id)
+    return row?.blob ?? null
+  }
+
+  async deleteFile(id: string): Promise<void> {
+    await this.db.files.delete(id)
+  }
+
+  async clearFiles(): Promise<void> {
+    await this.db.files.clear()
   }
 }
 
@@ -364,6 +415,21 @@ export class LocalRepository implements Repository {
     await storage.delete(name, id)
   }
 
+  async putFile(id: string, file: Blob): Promise<void> {
+    const storage = await this.store()
+    await storage.putFile(id, file)
+  }
+
+  async getFile(id: string): Promise<Blob | null> {
+    const storage = await this.store()
+    return await storage.getFile(id)
+  }
+
+  async removeFile(id: string): Promise<void> {
+    const storage = await this.store()
+    await storage.deleteFile(id)
+  }
+
   async saveProfile(patch: Partial<Profile>): Promise<Profile> {
     const storage = await this.store()
     const current = (await this.read()).profile
@@ -380,15 +446,19 @@ export class LocalRepository implements Repository {
     return next
   }
 
+  /* Both replace every document record, so the files those records pointed at
+     go too — otherwise they would sit in storage with nothing able to reach them. */
   async resetToDemo(): Promise<Snapshot> {
     await this.ready()
     await this.write(demoSnapshot())
+    await (this.storage ?? new MemoryStorage()).clearFiles()
     return await this.read()
   }
 
   async clearEverything(): Promise<Snapshot> {
     await this.ready()
     await this.write(emptySnapshot())
+    await (this.storage ?? new MemoryStorage()).clearFiles()
     return await this.read()
   }
 }

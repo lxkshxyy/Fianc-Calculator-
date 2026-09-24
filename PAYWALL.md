@@ -45,7 +45,7 @@ screen is never a blank page.
 | Wealth | Insurance | `/app/insurance` |
 | Tools | Family | `/app/family` |
 
-## The 16 free screens
+## The 17 free screens
 
 | Section | Screen | Route |
 |---|---|---|
@@ -65,6 +65,22 @@ screen is never a blank page.
 | Tools | Settings | `/app/settings` |
 | — | Onboarding | `/app/onboarding` |
 | — | Upgrade | `/app/upgrade` |
+| — | Profile | `/app/profile` |
+
+---
+
+## How a member gets Diamond (no payment provider yet)
+
+1. They tap **Upgrade to Diamond** (Settings, or the Silver pill in the header)
+   and send a request. It gets a reference like `WRC-D7K3P9Q`.
+2. The WRC team calls them, agrees the plan and takes payment.
+3. The team runs `node scripts/diamond-code.mjs WRC-D7K3P9Q` and reads them the
+   code it prints. They type it into the Upgrade screen; Diamond opens.
+
+A code only works for its own reference. The signing key is in
+`src/config/activation.json`; changing it invalidates every code handed out.
+This is an interim step: once `src/config/server.ts` points at a real server,
+the server should decide the tier instead.
 
 ---
 

@@ -1,14 +1,15 @@
 import { MoreVertical } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { AppButton } from '@/components/ui/AppButton'
+import { Avatar } from '@/components/ui/Avatar'
 import { TierBadge } from '@/components/ui/TierBadge'
 import { useProfile } from '@/data/store/data'
 import { useHtmlLang, useT } from '@/i18n'
 import { cn } from '@/lib/cn'
 import { BRAND } from '@/config/brand'
-import { routeMetaFor } from './navigation'
+import { APP_BASE, routeMetaFor } from './navigation'
 
 /**
  * §5.3 — desktop shows title + subtitle left and actions right; mobile is a
@@ -64,29 +65,99 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
           collapsed ? 'py-2' : 'py-3 lg:py-5',
         )}
       >
-        <div className="min-w-0">
-          <h1
-            className={cn(
-              'text-text truncate font-bold tracking-tight transition-all duration-150',
+        <div className="flex min-w-0 items-center gap-3">
+          {/*
+           * The greeting carries the person's picture, and the picture is the way
+           * into their profile — the same place a phone's own apps put it.
+           */}
+          {meta?.greeting === true ? (
+            <Link
+              to={`${APP_BASE}/profile`}
+              aria-label={t('header.openProfile')}
+              className="focus-visible:outline-text-2 shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <Avatar
+                avatar={profile?.avatar}
+                name={profile?.displayName ?? ''}
+                size={collapsed ? 34 : 44}
+                className="ring-border ring-1 transition-all duration-150"
+              />
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            {meta?.greeting === true && meta.accent !== undefined ? (
               /*
-               * Was `text-title : text-title lg:text-page`, which collapsed only at
-               * lg — the one breakpoint §5.3 does not ask for — and never on mobile,
-               * the one it does. 34px -> 20px now happens at every width.
+               * The named greeting is set on two lines — the words small, the name
+               * large — so the name is never the part that gets cut. With the
+               * picture beside it, "Welcome back, Lakshay" no longer fits one line
+               * of a phone header, and truncating it cuts off exactly the name.
+               *
+               * The words stay in sentence order, so Hindi (name first) reads
+               * name-then-greeting and English greeting-then-name. Its leading
+               * comma is dropped once it sits on a line of its own.
                */
-              collapsed ? 'text-title' : 'text-page',
+              <h1
+                className="text-text min-w-0 tracking-tight"
+                /* Read as the one sentence it is, not as three separate lines. */
+                aria-label={`${title}${meta.accent}${meta.titleTail ?? ''}`}
+              >
+                {title === '' ? null : (
+                  <span className="text-caption text-text-2 block truncate font-medium">
+                    {title}
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    'text-accent block truncate font-bold transition-all duration-150',
+                    /*
+                     * On its own line the name can be read at title size even in
+                     * the app shell — the one-line sentence was what needed
+                     * `.app-greeting` to shrink it, so that rule is not applied.
+                     */
+                    collapsed ? 'text-lead lg:text-title' : 'text-title lg:text-page',
+                  )}
+                >
+                  {meta.accent}
+                </span>
+                {meta.titleTail === undefined || meta.titleTail === '' ? null : (
+                  <span className="text-caption text-text-2 block truncate font-medium">
+                    {' '}
+                    {meta.titleTail.replace(/^,\s*/, '')}
+                  </span>
+                )}
+              </h1>
+            ) : (
+              <h1
+                className={cn(
+                  'text-text truncate font-bold tracking-tight transition-all duration-150',
+                  /*
+                   * Was `text-title : text-title lg:text-page`, which collapsed only at
+                   * lg — the one breakpoint §5.3 does not ask for — and never on mobile,
+                   * the one it does. 34px -> 20px now happens at every width.
+                   */
+                  collapsed ? 'text-title' : 'text-page',
+                  /* Sized down in the app shell only — see `.app-greeting` in index.css. */
+                  meta?.greeting === true && 'app-greeting',
+                )}
+              >
+                {title}
+              </h1>
             )}
-          >
-            {title}
-            {meta?.accent === undefined ? null : <span className="text-accent">{meta.accent}</span>}
-            {meta?.titleTail}
-          </h1>
-          {subtitle === '' || collapsed ? null : (
-            <p className="text-meta text-text-2 hidden truncate lg:block">{subtitle}</p>
-          )}
+            {subtitle === '' || collapsed ? null : (
+              <p className="text-meta text-text-2 hidden truncate lg:block">{subtitle}</p>
+            )}
+          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <TierBadge tier={tier} size="sm" />
+          {/* The tier pill is also the way to the plans (§9.5). */}
+          <Link
+            to={`${APP_BASE}/upgrade`}
+            aria-label={t('header.membership', { tier: tier === 'diamond' ? 'Diamond' : 'Silver' })}
+            className="focus-visible:outline-text-2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <TierBadge tier={tier} size="sm" />
+          </Link>
           <AppButton
             variant="ghost"
             size="icon"

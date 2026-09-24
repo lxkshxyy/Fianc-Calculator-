@@ -18,6 +18,7 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  UserRound,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -209,14 +210,17 @@ export const NAV_GROUPS: NavGroup[] = [
  * Private routes that exist but never appear in navigation.
  *
  * `onboarding` is reached programmatically after signup; `upgrade` is reached
- * from LockedOverlay and the tier pill (§9.5). Neither has a §9 screen spec yet.
+ * from LockedOverlay, the tier pill and Settings (§9.5); `profile` from the
+ * avatar wherever it appears.
  */
 export const UNLISTED_PRIVATE_ROUTES: NavItem[] = [
   { path: 'onboarding', label: 'Onboarding', labelKey: 'nav.onboarding', icon: Sparkles, phase: 9 },
   { path: 'upgrade', label: 'Upgrade', labelKey: 'nav.upgrade', icon: Award, phase: 5 },
+  /* Reached from the avatar in the dashboard greeting, the sidebar, More and Settings. */
+  { path: 'profile', label: 'Profile', labelKey: 'nav.profile', icon: UserRound, phase: 8 },
 ]
 
-/** Every private route segment under /app — the 24 the route map settles on. */
+/** Every private route segment under /app — the 25 the route map settles on. */
 export function allPrivateRouteSegments(): string[] {
   const fromGroups = NAV_GROUPS.flatMap((group) => [
     ...(group.indexPath === null ? [] : [group.indexPath]),
@@ -281,7 +285,7 @@ export const TABS: Tab[] = [
     labelKey: 'nav.more',
     icon: Settings,
     to: null,
-    owns: ['assistant', 'documents', 'expert-chat', 'family', 'settings', 'upgrade'],
+    owns: ['assistant', 'documents', 'expert-chat', 'family', 'settings', 'upgrade', 'profile'],
   },
 ]
 
@@ -313,6 +317,16 @@ export type RouteMeta = {
    * word, which quietly makes the whole mechanism English-shaped.
    */
   titleTail?: string
+  /**
+   * True for the one heading that carries a person's name.
+   *
+   * Every other title in the app is a fixed word or two — "Assets", "Budget" —
+   * and fits any header at any size. "Welcome back, Lakshay" is as long as the
+   * name is, which is why it is the only one that needs its own sizing rule in
+   * the app shell. Marked here rather than inferred from `accent` in the header,
+   * so the reason is written down where the decision is made.
+   */
+  greeting?: boolean
 }
 
 /**
@@ -359,7 +373,7 @@ export function routeMetaFor(
     const name = firstName(displayName)
     const subtitle = t('header.greetingSubtitle')
 
-    if (name === null) return { title: t('header.greeting'), subtitle }
+    if (name === null) return { title: t('header.greeting'), subtitle, greeting: true }
 
     /*
      * Split the translated sentence on its placeholder rather than concatenating
@@ -368,7 +382,7 @@ export function routeMetaFor(
      * same code, the name landing where each language wants it.
      */
     const [lead = '', tail = ''] = t('header.greetingNamed').split('{name}')
-    return { title: lead, accent: name, titleTail: tail, subtitle }
+    return { title: lead, accent: name, titleTail: tail, subtitle, greeting: true }
   }
 
   for (const group of NAV_GROUPS) {

@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   EM_DASH,
+  MAX_AMOUNT,
   amountTone,
   formatCompact,
+  formatExact,
   formatFull,
   formatPercent,
   isRenderableAmount,
+  isWithinAmountLimit,
   parseAmount,
 } from './money'
 
@@ -159,4 +162,48 @@ describe('round-trip', () => {
       expect(parseAmount(formatFull(value))).toBe(value)
     },
   )
+})
+
+describe('§4.5b — no figure can be wider than the card it sits in', () => {
+  it('still renders ten digits exactly', () => {
+    expect(formatFull(9_999_999_999)).toBe('₹9,99,99,99,999')
+  })
+
+  it('rounds anything past ten digits, even when `full` was asked for', () => {
+    expect(formatFull(10_000_000_000)).toBe('₹1,000 Cr')
+    expect(formatFull(12_345_600_000)).toBe('₹1,235 Cr')
+  })
+
+  it('drops the crore decimals past ten digits, and keeps them below', () => {
+    expect(formatCompact(1_234_500_000)).toBe('₹123.45 Cr')
+    expect(formatCompact(12_345_000_000)).toBe('₹1,235 Cr')
+  })
+
+  it('renders the entry limit itself', () => {
+    expect(formatCompact(MAX_AMOUNT)).toBe('₹1,00,000 Cr')
+  })
+
+  it('clamps a figure saved before the limit existed rather than printing it', () => {
+    expect(formatCompact(1.8466e31)).toBe('>₹1,00,000 Cr')
+    expect(formatFull(1.8466e31)).toBe('>₹1,00,000 Cr')
+    expect(formatCompact(-1.8466e31)).toBe('<-₹1,00,000 Cr')
+  })
+
+  it('keeps the real figure on the title, which has no width to run out of', () => {
+    expect(formatExact(1_234_500_000)).toBe('₹1,23,45,00,000')
+  })
+
+  it('never renders more than 14 characters, whatever it is handed', () => {
+    for (const value of [0, 1e6, 1e10, MAX_AMOUNT, 1e20, 1.8466e31, -1.8466e31, 1e300]) {
+      expect(formatCompact(value).length).toBeLessThanOrEqual(14)
+      expect(formatFull(value).length).toBeLessThanOrEqual(14)
+    }
+  })
+
+  it('accepts twelve digits and refuses thirteen', () => {
+    expect(isWithinAmountLimit(999_999_999_999)).toBe(true)
+    expect(isWithinAmountLimit(1_000_000_000_000)).toBe(false)
+    expect(isWithinAmountLimit(-1_000_000_000_000)).toBe(false)
+    expect(isWithinAmountLimit(Number.POSITIVE_INFINITY)).toBe(false)
+  })
 })

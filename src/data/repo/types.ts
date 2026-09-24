@@ -102,6 +102,16 @@ export interface Repository {
     patch: Patch<Collections[K]>,
   ): Promise<Collections[K] | null>
   remove<K extends CollectionName>(name: K, id: string): Promise<void>
+  /**
+   * The bytes behind a document, kept apart from the record.
+   *
+   * Records are read in full on every refresh (`read()` above), which is fine for
+   * rows of text and would not be for a folder of scanned PDFs. Files are only
+   * ever fetched one at a time, when somebody opens one.
+   */
+  putFile(id: string, file: Blob): Promise<void>
+  getFile(id: string): Promise<Blob | null>
+  removeFile(id: string): Promise<void>
   saveProfile(patch: Partial<Profile>): Promise<Profile>
   saveTaxProfile(patch: Partial<TaxProfile>): Promise<TaxProfile>
   /** §8.3 — restore the demo household. */

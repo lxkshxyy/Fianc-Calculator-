@@ -51,7 +51,7 @@ export function GroupIndex() {
               >
                 <item.icon aria-hidden className="text-text-3 size-4 shrink-0" />
                 <span className="text-text flex-1 text-sm">{item.label}</span>
-                {locked ? <TierBadge tier="diamond" /> : null}
+                {locked ? <TierBadge tier="diamond" iconOnly /> : null}
                 <ChevronRight aria-hidden className="text-text-3 size-4 shrink-0" />
               </Link>
             </li>

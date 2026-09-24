@@ -2,7 +2,13 @@ import { useId, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { useT } from '@/i18n'
-import { formatFull, parseAmount } from '@/lib/money'
+import {
+  MAX_AMOUNT,
+  formatCompact,
+  formatFull,
+  isWithinAmountLimit,
+  parseAmount,
+} from '@/lib/money'
 
 /**
  * §10.9 — `inputMode="decimal"` so the numeric keypad opens on a phone.
@@ -11,6 +17,11 @@ import { formatFull, parseAmount } from '@/lib/money'
  * An unparseable entry reports itself and yields `null`; it never silently
  * becomes 0. A silent zero in a finance app writes a real transaction of the
  * wrong amount.
+ *
+ * §4.5b — an amount past the entry limit is refused here, as it is typed, rather
+ * than at submit. A figure that wide is a slipped decimal or a stray keypress,
+ * and finding that out on the way in costs one correction; finding out from a
+ * net-worth card that has gone sideways costs a cleanup.
  */
 export function NumberField({
   label,
@@ -45,7 +56,11 @@ export function NumberField({
   const [touched, setTouched] = useState(false)
   const parsed = parseAmount(value)
   const unreadable = touched && value.trim() !== '' && parsed === null
-  const showError = unreadable || (error !== undefined && error !== '')
+  /* Not gated on `touched`: this one is unambiguous the moment it is true, and
+     waiting for a blur to say so lets the person keep typing a number that can
+     never be saved. */
+  const tooLarge = parsed !== null && !isWithinAmountLimit(parsed)
+  const showError = unreadable || tooLarge || (error !== undefined && error !== '')
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -60,6 +75,9 @@ export function NumberField({
         disabled={disabled}
         value={value}
         placeholder={placeholder}
+        /* Room for the limit written out in full — ₹9,99,99,99,99,999 — plus a
+           unit suffix, and no room for a paste that runs to the horizon. */
+        maxLength={24}
         aria-invalid={showError}
         aria-describedby={id + '-hint'}
         onBlur={() => {
@@ -82,11 +100,13 @@ export function NumberField({
       >
         {unreadable
           ? t('form.unreadableAmount')
-          : showError
-            ? error
-            : parsed === null
-              ? (hint ?? '')
-              : formatFull(parsed)}
+          : tooLarge
+            ? t('form.amountTooLarge', { max: formatCompact(MAX_AMOUNT) })
+            : showError
+              ? error
+              : parsed === null
+                ? (hint ?? '')
+                : formatFull(parsed)}
       </p>
     </div>
   )

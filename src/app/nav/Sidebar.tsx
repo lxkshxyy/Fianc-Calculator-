@@ -1,6 +1,7 @@
 import { ChevronRight, ExternalLink } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 
+import { Avatar } from '@/components/ui/Avatar'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Wordmark } from '@/components/ui/Wordmark'
@@ -32,15 +33,17 @@ export function Sidebar() {
         <ThemeToggle />
       </div>
 
-      <div className="rounded-tile bg-surface-2 mx-4 mb-4 flex items-center gap-3 p-3">
-        <span className="rounded-pill bg-gold/15 text-body text-gold flex size-9 shrink-0 items-center justify-center font-semibold">
-          {displayName.slice(0, 1).toUpperCase()}
-        </span>
+      <Link
+        to={APP_BASE + '/profile'}
+        aria-label={t('header.openProfile')}
+        className="rounded-tile bg-surface-2 hover:bg-surface focus-visible:outline-text-2 mx-4 mb-4 flex items-center gap-3 p-3 transition-colors focus-visible:outline-2"
+      >
+        <Avatar avatar={profile?.avatar} name={displayName} size={36} />
         <div className="min-w-0 flex-1">
           <p className="text-meta text-text truncate font-medium">{displayName}</p>
           <TierBadge tier={tier} size="sm" className="mt-1" />
         </div>
-      </div>
+      </Link>
 
       <nav className="flex-1 overflow-y-auto overscroll-contain px-3 pb-6">
         {NAV_GROUPS.map((group) => (

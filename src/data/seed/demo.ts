@@ -47,6 +47,8 @@ export function demoProfile(): Profile {
     lastCheckInDate: iso(0),
     dashboardLayout: null,
     hiddenDashboardSections: [],
+    avatar: null,
+    phone: '',
   })
 }
 
@@ -333,6 +335,12 @@ export function demoSnapshot(): Snapshot {
       sizeBytes: 482_000,
       uploadedOn: iso(45),
       tags: ['term', 'demo'],
+      mimeType: 'application/pdf',
+      /* A demo row with no file behind it — the list says so rather than
+         offering to open something that is not there. */
+      fileId: null,
+      scan: null,
+      delivery: 'local' as const,
     }),
   ]
 
@@ -341,6 +349,9 @@ export function demoSnapshot(): Snapshot {
       name: 'Spouse',
       relation: 'spouse' as const,
       includeInHousehold: true,
+      dateOfBirth: null,
+      dependent: false,
+      notes: '',
     }),
   ]
 

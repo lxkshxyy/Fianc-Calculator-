@@ -41,6 +41,7 @@ export const en = {
   'nav.settings': 'Settings',
   'nav.onboarding': 'Onboarding',
   'nav.upgrade': 'Upgrade',
+  'nav.profile': 'Profile',
 
   /* ── Sticky header ───────────────────────────────────────────────────── */
   /*
@@ -58,12 +59,15 @@ export const en = {
   'header.groupSubtitle': 'Everything in your {group}',
   'header.openMore': 'More',
   'header.leavesApp': '(leaves the app)',
+  'header.openProfile': 'Your profile',
+  'header.membership': 'Membership: {tier}',
 
   /* ── More sheet ──────────────────────────────────────────────────────── */
   'more.title': 'More',
   'more.description': 'Tools and settings',
   'more.theme': 'Theme',
   'more.signOut': 'Sign out',
+  'more.viewProfile': 'View profile',
 
   /* ── Common actions, used on every screen ────────────────────────────── */
   'action.add': 'Add',
@@ -74,6 +78,7 @@ export const en = {
   'action.details': 'Details →',
   'action.done': 'Done',
   'action.edit': 'Edit',
+  'action.delete': 'Delete',
   'action.reset': 'Reset',
 
   /* ── Dashboard ───────────────────────────────────────────────────────── */
@@ -149,7 +154,12 @@ export const en = {
   'emi.noScoreBody': 'Add your score when you check it, and the trend builds itself.',
 
   /* ── Settings ────────────────────────────────────────────────────────── */
+  'settings.profile': 'Profile',
+  'settings.profileLine': 'Name, picture and language',
   'settings.membership': 'Membership',
+  'settings.upgrade': 'Upgrade to Diamond',
+  'settings.upgradePending': 'Enter your Diamond code',
+  'settings.upgradePendingLine': 'Diamond request sent',
   'settings.allStages': 'All six stages open',
   'settings.twoStages': 'Stages one and two open',
   'settings.appearance': 'Appearance',
@@ -160,6 +170,8 @@ export const en = {
   'settings.languageNote': 'The app switches over straight away. Your data is never translated.',
   'settings.yourData': 'Your data',
   'settings.storedLocally': 'Everything is stored on this device only. Nothing is sent anywhere.',
+  'settings.storedWithServer':
+    'Your records are stored on this device. Requests you send, and documents you choose to share, go to the WRC team.',
   'settings.deleteMyData': 'Delete my data',
   'settings.signOut': 'Sign out',
   'settings.confirmTitle': 'Delete my data?',
@@ -168,6 +180,27 @@ export const en = {
     'Your income, spending, loans, holdings, goals and policies are all removed. The app keeps working — every screen falls back to its empty state.',
   'settings.keepMyData': 'Keep my data',
   'settings.deleteEverything': 'Delete everything',
+
+  /* ── Profile ─────────────────────────────────────────────────────────── */
+  'profile.subtitle': 'Your name, picture and language.',
+  'profile.picture': 'Profile picture',
+  'profile.pictureHint': 'Pick one, or use a photo from your gallery.',
+  'profile.fromGallery': 'From gallery',
+  'profile.yourPhoto': 'Your photo',
+  'profile.changePhoto': 'Change picture',
+  'profile.removePicture': 'Remove picture',
+  'profile.avatarN': 'Avatar {n}',
+  'profile.photoError': 'That image could not be used. Try a JPG or PNG photo.',
+  'profile.details': 'Your details',
+  'profile.name': 'Name',
+  'profile.nameHint': 'The dashboard greets you by the first word.',
+  'profile.mobile': 'Mobile number (optional)',
+  'profile.email': 'Email',
+  'profile.save': 'Save details',
+  'profile.saved': 'Saved',
+  'profile.nameNeeded': 'Your name is needed.',
+  'profile.emailInvalid': 'That email does not look right.',
+  'profile.mobileInvalid': 'Enter a 10-digit mobile number, or leave it empty.',
 
   /* ── Record forms ────────────────────────────────────────────────────── */
   'field.name': 'Name',
@@ -186,13 +219,23 @@ export const en = {
   'field.targetAmount': 'Target amount',
   'field.savedSoFar': 'Saved so far',
   'field.targetDate': 'Target date',
+  'field.relation': 'Relation',
+  'field.dateOfBirth': 'Date of birth',
+  'field.dependent': 'Depends on you financially?',
+  'field.inHousehold': 'Count in household totals?',
+  'field.notes': 'Notes',
   'form.isNeeded': '{label} is needed.',
   'form.enterNumber': 'Enter a number.',
   'form.unreadableAmount': 'Not a recognisable amount. Try 15k, 1.5L or 15,000.',
+  'form.amountTooLarge': 'Too large. Maximum is {max}.',
 
   /* ── Empty and loading states ────────────────────────────────────────── */
   'state.loading': 'Loading…',
   'state.nothingYet': 'Nothing here yet',
+
+  /* ── Record rows ─────────────────────────────────────────────────────── */
+  'record.deleteNamed': 'Delete {name}',
+  'record.confirmDelete': 'Remove this? It cannot be undone.',
 } as const
 
 export type TranslationKey = keyof typeof en

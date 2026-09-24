@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { handleBackPress, pushBackHandler } from './backButton'
-import { isNativeApp, resolvedTheme, themeBackground } from './platform'
+import { isNativeApp, resolvedTheme, stampShell, themeBackground } from './platform'
 
 /**
  * The native shell must be invisible to the web build. These assert the two
@@ -11,6 +11,7 @@ import { isNativeApp, resolvedTheme, themeBackground } from './platform'
 
 afterEach(() => {
   document.documentElement.removeAttribute('data-theme')
+  document.documentElement.removeAttribute('data-shell')
   window.history.pushState({}, '', '/')
   vi.restoreAllMocks()
 })
@@ -36,6 +37,13 @@ describe('platform detection', () => {
   it('gives each theme a background matching tokens.css', () => {
     expect(themeBackground('dark')).toBe('#0a0b0c')
     expect(themeBackground('light')).toBe('#f6f7f8')
+  })
+
+  it('stamps the shell on <html>, so the app-only styling has something to match', () => {
+    stampShell()
+    /* A browser, which is what this test environment is — the app-shell branch
+       is what `html[data-shell="native"]` in index.css keys off. */
+    expect(document.documentElement.dataset.shell).toBe('web')
   })
 })
 

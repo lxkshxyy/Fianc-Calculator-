@@ -47,6 +47,9 @@ describe('Dashboard', () => {
     /* First word only, and it is the fragment the header paints in the accent. */
     expect(meta?.accent).toBe('Lakshay')
     expect(meta?.titleTail).toBe('')
+    /* The flag the app shell sizes on — see `.app-greeting` in index.css. */
+    expect(meta?.greeting).toBe(true)
+    expect(routeMetaFor('/app/assets')?.greeting).toBeUndefined()
 
     await renderDashboard()
     // One heading per screen: the greeting is the header's, not the body's.

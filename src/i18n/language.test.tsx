@@ -93,27 +93,28 @@ describe('switching the language', () => {
    * not enough — the Suspense fallback is still up. Waiting for the control the
    * test is about to click covers both.
    */
-  async function openSettings(): Promise<HTMLElement> {
-    const router = createMemoryRouter(routes, { initialEntries: ['/app/settings'] })
+  /* The language picker lives on the Profile screen, beside the name and picture. */
+  async function openProfile(): Promise<HTMLElement> {
+    const router = createMemoryRouter(routes, { initialEntries: ['/app/profile'] })
     render(<RouterProvider router={router} />)
     return await screen.findByRole('button', { name: 'हिन्दी' }, { timeout: 5000 })
   }
 
   it('changes the navigation, the heading and <html lang>', async () => {
     const user = userEvent.setup()
-    const hindiButton = await openSettings()
+    const hindiButton = await openProfile()
 
     /* English first — the screen heading, the section labels, the tab bar. */
-    expect(screen.getAllByRole('heading', { name: 'Settings' }).length).toBeGreaterThan(0)
-    expect(screen.getByText('Your data')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Profile' }).length).toBeGreaterThan(0)
+    expect(screen.getByText('Your details')).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
 
     await user.click(hindiButton)
 
     await waitFor(() => {
-      expect(screen.getAllByRole('heading', { name: 'सेटिंग्स' }).length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('heading', { name: 'प्रोफ़ाइल' }).length).toBeGreaterThan(0)
     })
-    expect(screen.getByText('आपका डेटा')).toBeInTheDocument()
+    expect(screen.getByText('आपकी जानकारी')).toBeInTheDocument()
     expect(screen.getByText('भाषा')).toBeInTheDocument()
     /*
      * Twice: the desktop sidebar and the mobile tab bar both render it, and both
@@ -127,7 +128,7 @@ describe('switching the language', () => {
     /* And back, so the switch is not one-way. */
     await user.click(screen.getByRole('button', { name: 'English' }))
     await waitFor(() => {
-      expect(screen.getAllByRole('heading', { name: 'Settings' }).length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('heading', { name: 'Profile' }).length).toBeGreaterThan(0)
     })
     expect(document.documentElement.lang).toBe('en')
   })
@@ -145,7 +146,7 @@ describe('switching the language', () => {
 
   it('survives a reload, because it is stored on the profile', async () => {
     const user = userEvent.setup()
-    await user.click(await openSettings())
+    await user.click(await openProfile())
     await waitFor(() => {
       expect(useData.getState().snapshot?.profile.language).toBe('hi')
     })
