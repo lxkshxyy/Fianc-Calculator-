@@ -154,10 +154,48 @@ describe('Profile', () => {
   })
 })
 
-describe('upgrading to Diamond', () => {
-  it('goes from Settings to a request, then a code, then Diamond', async () => {
-    const user = userEvent.setup()
+describe('where Upgrade and Language live', () => {
+  it('keeps the language picker in Settings, and no upgrade button there', async () => {
     open('/app/settings')
+    expect(
+      await screen.findByRole('button', { name: 'हिन्दी' }, { timeout: 5000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'English' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /upgrade to diamond/i })).toBeNull()
+    expect(screen.queryByText('Membership')).toBeNull()
+  })
+
+  it('keeps the membership card in Profile, and no language picker there', async () => {
+    open('/app/profile')
+    expect(
+      await screen.findByRole('button', { name: /upgrade to diamond/i }, { timeout: 5000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Membership')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'हिन्दी' })).toBeNull()
+  })
+
+  it('shows "Enter your Diamond code" on Profile once a request is waiting', async () => {
+    await useData.getState().create('requests', {
+      reference: 'WRC-DAAAAAA',
+      service: 'diamond-upgrade',
+      status: 'submitted',
+      submittedAt: 1,
+      answers: { phone: '+91 98765 43210' },
+      consentGivenAt: 1,
+      delivery: 'queued',
+    })
+    open('/app/profile')
+    expect(
+      await screen.findByRole('button', { name: /enter your diamond code/i }, { timeout: 5000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Diamond request sent')).toBeInTheDocument()
+  })
+})
+
+describe('upgrading to Diamond', () => {
+  it('goes from Profile to a request, then a code, then Diamond', async () => {
+    const user = userEvent.setup()
+    open('/app/profile')
     await user.click(
       await screen.findByRole('button', { name: /upgrade to diamond/i }, { timeout: 5000 }),
     )
@@ -184,6 +222,13 @@ describe('upgrading to Diamond', () => {
 
     const reference = request?.reference ?? ''
     expect(await screen.findByText(reference)).toBeInTheDocument()
+
+    /* No automation configured here, so WhatsApp to the team's number is the way to send it. */
+    const whatsapp = screen.getByRole('link', { name: /send on whatsapp/i })
+    const href = whatsapp.getAttribute('href') ?? ''
+    expect(href).toMatch(/^https:\/\/wa\.me\/918744855792\?text=/)
+    expect(decodeURIComponent(href)).toContain(reference)
+    expect(decodeURIComponent(href)).toContain('+91 98765 43210')
 
     await user.type(screen.getByLabelText(/activation code/i), 'AAAA-BBBB')
     await user.click(screen.getByRole('button', { name: /activate diamond/i }))

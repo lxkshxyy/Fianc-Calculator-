@@ -8,7 +8,9 @@ import { cn } from '@/lib/cn'
  *
  * The error slot always occupies a line, so a message appearing does not shove
  * the rest of the form down the page — the field below it stays where the thumb
- * expected it to be.
+ * expected it to be. Its 8px of bottom padding is what keeps a hint off the next
+ * field's label: without it "…by the first word." ran straight into "Mobile
+ * number" on the Profile screen.
  */
 export function TextField({
   label,
@@ -46,7 +48,7 @@ export function TextField({
       />
       <p
         id={describedBy}
-        className={cn('text-caption min-h-[18px]', invalid ? 'text-danger' : 'text-text-2')}
+        className={cn('text-caption min-h-[26px] pb-2', invalid ? 'text-danger' : 'text-text-2')}
       >
         {invalid ? error : (hint ?? '')}
       </p>

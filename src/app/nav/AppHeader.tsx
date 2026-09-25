@@ -55,7 +55,12 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
   return (
     <header
       className={cn(
-        'border-border bg-bg-elevated/95 sticky top-0 z-30 border-b backdrop-blur',
+        /*
+         * Solid, not 95% + blur. On the phone the blur let whatever scrolled
+         * underneath — the Profile avatars, a coloured card — show through as
+         * ghosted smudges behind the status bar and the title.
+         */
+        'border-border bg-bg-elevated sticky top-0 z-30 border-b',
         'pt-[env(safe-area-inset-top)]',
       )}
     >
@@ -129,13 +134,21 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
             ) : (
               <h1
                 className={cn(
-                  'text-text truncate font-bold tracking-tight transition-all duration-150',
+                  'text-text font-bold tracking-tight transition-all duration-150',
                   /*
                    * Was `text-title : text-title lg:text-page`, which collapsed only at
                    * lg — the one breakpoint §5.3 does not ask for — and never on mobile,
-                   * the one it does. 34px -> 20px now happens at every width.
+                   * the one it does. It now collapses to 20px at every width.
+                   *
+                   * Expanded, a phone gets 22–28px (by screen width) over up to two
+                   * lines rather than 34px on one: beside the tier pill and the menu
+                   * button, 34px cut "Income Opportunities" to "Income …" and
+                   * "Achievements" to "Achieve…". break-words is for large system
+                   * font sizes, where one long word would otherwise be clipped.
                    */
-                  collapsed ? 'text-title' : 'text-page',
+                  collapsed
+                    ? 'text-title truncate'
+                    : 'lg:text-page line-clamp-2 text-[clamp(1.375rem,7vw,1.75rem)] leading-[1.15] text-balance break-words lg:truncate',
                   /* Sized down in the app shell only — see `.app-greeting` in index.css. */
                   meta?.greeting === true && 'app-greeting',
                 )}

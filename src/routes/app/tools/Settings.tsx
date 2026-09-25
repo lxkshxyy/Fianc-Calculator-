@@ -1,28 +1,55 @@
 import {
   ChevronRight,
   Database,
-  Gem,
-  KeyRound,
-  Palette,
+  Languages,
+  LogOut,
   Settings as SettingsIcon,
   ShieldAlert,
+  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { APP_BASE } from '@/app/nav/navigation'
 import { AppButton } from '@/components/ui/AppButton'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { Sheet } from '@/components/ui/Sheet'
-import { TierBadge } from '@/components/ui/TierBadge'
 import { hasServer } from '@/config/server'
-import { useData, useProfile, useSnapshot } from '@/data/store/data'
+import type { Language } from '@/data/schema/profile'
+import { useData, useProfile } from '@/data/store/data'
 import { useT } from '@/i18n'
 import type { TranslationKey } from '@/i18n/en'
 import { useSession } from '@/data/store/session'
+import { cn } from '@/lib/cn'
 import { THEME_PREFERENCES, useTheme, type ThemePreference } from '@/lib/theme'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
+
+/**
+ * Written in each language's own script, never translated: the person looking
+ * for Hindi is scanning for "हिन्दी", and the current language's word for it
+ * would hide the option from exactly them. Adding a language is a dictionary in
+ * src/i18n plus one line here.
+ */
+const LANGUAGES: { id: Language; label: string }[] = [
+  { id: 'en', label: 'English' },
+  { id: 'hi', label: 'हिन्दी' },
+]
+
+/*
+ * Both choices on this screen are segmented controls: one rounded track, the
+ * picked option filled. Segments size to their words (flex-auto), so "Match my
+ * device" — or फ़ोन के हिसाब से — takes the room it needs and the three theme
+ * options stay on one row on a 360px phone, which separate pills did not.
+ */
+const TRACK = 'bg-surface-2 flex min-w-0 flex-1 gap-1 rounded-full p-1'
+
+function segmentClass(selected: boolean): string {
+  return cn(
+    'min-h-11 flex-auto rounded-full px-3 text-sm whitespace-nowrap transition-colors duration-150',
+    selected ? 'bg-gold text-on-gold font-medium shadow-sm' : 'text-text-2 hover:text-text',
+  )
+}
 
 const THEME_LABEL: Record<ThemePreference, TranslationKey> = {
   light: 'settings.theme.light',
@@ -37,17 +64,10 @@ export function Settings() {
   const clearEverything = useData((state) => state.clearEverything)
   const signOut = useSession((state) => state.signOut)
   const email = useSession((state) => state.account?.email ?? '')
-  const snapshot = useSnapshot()
-  const navigate = useNavigate()
   const { preference, setPreference } = useTheme()
   const [confirmClear, setConfirmClear] = useState(false)
 
   if (profile === null) return null
-
-  const upgradePending =
-    snapshot?.requests.some(
-      (request) => request.service === 'diamond-upgrade' && request.status !== 'closed',
-    ) ?? false
 
   return (
     <ModuleScreen
@@ -71,83 +91,51 @@ export function Settings() {
         </Link>
       </ModuleSection>
 
-      <ModuleSection label={t('settings.membership')}>
+      {/*
+       * Language sits here, with the other ways of setting the app up. Membership
+       * moved the other way, to Profile — it is about the person, not the app.
+       */}
+      <ModuleSection label={t('settings.language')}>
         <Card>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex-1">
-              <p className="text-text font-medium">
-                {profile.tier === 'diamond' ? 'Diamond' : 'Silver'}
-              </p>
-              <p className="text-caption text-text-2">
-                {profile.tier === 'diamond'
-                  ? t('settings.allStages')
-                  : upgradePending
-                    ? t('settings.upgradePendingLine')
-                    : t('settings.twoStages')}
-              </p>
+          <div className="flex items-center gap-2.5">
+            {/* The 文A mark is how someone who cannot read the label finds this. */}
+            <Languages aria-hidden className="text-text-2 size-4 shrink-0" />
+            <div role="group" aria-label={t('settings.language')} className={TRACK}>
+              {LANGUAGES.map((language) => (
+                <button
+                  key={language.id}
+                  type="button"
+                  onClick={() => {
+                    void saveProfile({ language: language.id })
+                  }}
+                  aria-pressed={profile.language === language.id}
+                  className={segmentClass(profile.language === language.id)}
+                >
+                  {language.label}
+                </button>
+              ))}
             </div>
-            <TierBadge tier={profile.tier} />
-            {/*
-             * The tier switcher is how lock states get checked without a payment
-             * provider — useful to whoever is building this, and nothing a
-             * customer should ever be shown. `import.meta.env.DEV` is false in
-             * `npm run build`, so Rollup drops this whole branch: it is present
-             * under `npm run dev` and physically absent from the APK.
-             */}
-            {import.meta.env.DEV ? (
-              <AppButton
-                variant="ghost"
-                onClick={() => {
-                  void saveProfile({ tier: profile.tier === 'diamond' ? 'silver' : 'diamond' })
-                }}
-              >
-                {profile.tier === 'diamond' ? 'Switch to Silver' : 'Switch to Diamond'}
-              </AppButton>
-            ) : null}
           </div>
-          {profile.tier === 'diamond' ? null : (
-            <AppButton
-              variant="primary"
-              block
-              className="mt-4"
-              onClick={() => {
-                void navigate(`${APP_BASE}/upgrade`)
-              }}
-            >
-              {upgradePending ? (
-                <KeyRound aria-hidden className="size-4" />
-              ) : (
-                <Gem aria-hidden className="size-4" />
-              )}
-              {upgradePending ? t('settings.upgradePending') : t('settings.upgrade')}
-            </AppButton>
-          )}
+          <p className="text-caption text-text-3 mt-3">{t('settings.languageNote')}</p>
         </Card>
       </ModuleSection>
 
       <ModuleSection label={t('settings.appearance')}>
         <Card>
-          <div className="flex items-center gap-2.5">
-            <Palette aria-hidden className="text-text-2 size-4" />
-            <div className="flex flex-wrap gap-2">
-              {THEME_PREFERENCES.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => {
-                    setPreference(option)
-                  }}
-                  aria-pressed={preference === option}
-                  className={
-                    preference === option
-                      ? 'bg-gold text-on-gold rounded-full px-3 py-1.5 text-sm font-medium'
-                      : 'border-border text-text-2 hover:border-border-strong rounded-full border px-3 py-1.5 text-sm'
-                  }
-                >
-                  {t(THEME_LABEL[option])}
-                </button>
-              ))}
-            </div>
+          <div role="group" aria-label={t('settings.appearance')} className={TRACK}>
+            {THEME_PREFERENCES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setPreference(option)
+                }}
+                aria-pressed={preference === option}
+                className={segmentClass(preference === option)}
+              >
+                {t(THEME_LABEL[option])}
+              </button>
+            ))}
           </div>
         </Card>
       </ModuleSection>
@@ -156,24 +144,31 @@ export function Settings() {
         <Card>
           <div className="flex items-start gap-3">
             <Database aria-hidden className="text-text-2 mt-0.5 size-4 shrink-0" />
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="text-text-2 text-sm">
                 {t(hasServer() ? 'settings.storedWithServer' : 'settings.storedLocally')}
               </p>
+              {/*
+               * Outlined rather than ghost: as ghost buttons these read as two
+               * loose lines of text, indented by their own padding.
+               */}
               <div className="mt-4 flex flex-wrap gap-2">
                 {/*
                  * Not a build aid — this is the only way somebody can delete
                  * their own records from a device-only app, so it stays.
                  */}
                 <AppButton
-                  variant="ghost"
+                  variant="danger"
+                  size="sm"
                   onClick={() => {
                     setConfirmClear(true)
                   }}
                 >
+                  <Trash2 aria-hidden className="size-4" />
                   {t('settings.deleteMyData')}
                 </AppButton>
-                <AppButton variant="ghost" onClick={signOut}>
+                <AppButton variant="outline" size="sm" onClick={signOut}>
+                  <LogOut aria-hidden className="size-4" />
                   {t('settings.signOut')}
                 </AppButton>
               </div>

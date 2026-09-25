@@ -107,7 +107,7 @@ export const en = {
   'screen.income.subtitle':
     'Every rupee coming in, normalised to a monthly figure so the totals compare.',
   'screen.emi-credit.subtitle': 'What you owe, what it costs you, and what paying early would buy.',
-  'screen.settings.subtitle': 'Your profile, how the app looks, and what happens to your data.',
+  'screen.settings.subtitle': 'Your language, how the app looks, and what happens to your data.',
 
   /* ── Income screen ───────────────────────────────────────────────────── */
   'income.monthlyTotal': 'Monthly total',
@@ -155,7 +155,7 @@ export const en = {
 
   /* ── Settings ────────────────────────────────────────────────────────── */
   'settings.profile': 'Profile',
-  'settings.profileLine': 'Name, picture and language',
+  'settings.profileLine': 'Name, picture and membership',
   'settings.membership': 'Membership',
   'settings.upgrade': 'Upgrade to Diamond',
   'settings.upgradePending': 'Enter your Diamond code',
@@ -182,7 +182,7 @@ export const en = {
   'settings.deleteEverything': 'Delete everything',
 
   /* ── Profile ─────────────────────────────────────────────────────────── */
-  'profile.subtitle': 'Your name, picture and language.',
+  'profile.subtitle': 'Your name, picture and membership.',
   'profile.picture': 'Profile picture',
   'profile.pictureHint': 'Pick one, or use a photo from your gallery.',
   'profile.fromGallery': 'From gallery',

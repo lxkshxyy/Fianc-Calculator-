@@ -101,7 +101,7 @@ export const hi: Dictionary = {
     'आने वाला हर रुपया, महीने के हिसाब से — ताकि सारे आँकड़ों की तुलना हो सके।',
   'screen.emi-credit.subtitle':
     'आप पर क्या बकाया है, वह आपको कितना महँगा पड़ रहा है, और जल्दी चुकाने से क्या बचेगा।',
-  'screen.settings.subtitle': 'आपकी प्रोफ़ाइल, ऐप कैसा दिखे, और आपके डेटा का क्या होता है।',
+  'screen.settings.subtitle': 'आपकी भाषा, ऐप कैसा दिखे, और आपके डेटा का क्या होता है।',
 
   /* ── Income screen ───────────────────────────────────────────────────── */
   'income.monthlyTotal': 'महीने की कुल आमदनी',
@@ -150,7 +150,7 @@ export const hi: Dictionary = {
 
   /* ── Settings ────────────────────────────────────────────────────────── */
   'settings.profile': 'प्रोफ़ाइल',
-  'settings.profileLine': 'नाम, तस्वीर और भाषा',
+  'settings.profileLine': 'नाम, तस्वीर और सदस्यता',
   'settings.membership': 'सदस्यता',
   'settings.upgrade': 'डायमंड में अपग्रेड करें',
   'settings.upgradePending': 'अपना डायमंड कोड डालें',
@@ -181,7 +181,7 @@ export const hi: Dictionary = {
   'header.openProfile': 'आपकी प्रोफ़ाइल',
   'header.membership': 'सदस्यता: {tier}',
   'more.viewProfile': 'प्रोफ़ाइल देखें',
-  'profile.subtitle': 'आपका नाम, तस्वीर और भाषा।',
+  'profile.subtitle': 'आपका नाम, तस्वीर और सदस्यता।',
   'profile.picture': 'प्रोफ़ाइल तस्वीर',
   'profile.pictureHint': 'कोई एक चुनें, या गैलरी से अपनी फ़ोटो लगाएँ।',
   'profile.fromGallery': 'गैलरी से',

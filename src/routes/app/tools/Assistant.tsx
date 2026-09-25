@@ -96,9 +96,11 @@ function AssistantChat({ derived }: { derived: Derived }) {
             }}
             aria-label="Ask the assistant"
             placeholder="Ask about your money…"
-            className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 h-11 flex-1 border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+            /* min-w-0: an input will not shrink below its default width otherwise,
+               and on a 360px phone that pushed the Ask button off the card. */
+            className="rounded-tile border-border bg-surface text-text placeholder:text-text-3 focus-visible:outline-text-2 h-11 min-w-0 flex-1 border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
           />
-          <AppButton type="submit" disabled={text.trim().length === 0}>
+          <AppButton type="submit" className="shrink-0" disabled={text.trim().length === 0}>
             <Send aria-hidden className="size-4" />
             Ask
           </AppButton>

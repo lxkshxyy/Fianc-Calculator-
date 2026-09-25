@@ -83,7 +83,13 @@ export function RecordList({
                 <row.icon aria-hidden className="text-text-3 size-4 shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <div className="text-text truncate text-sm font-medium">{row.title}</div>
+                {/*
+                 * Two lines before an ellipsis, not one: on a 360px phone with an
+                 * amount on the right, one line left titles as "Freelance your …".
+                 */}
+                <div className="text-text line-clamp-2 text-sm font-medium break-words">
+                  {row.title}
+                </div>
                 {row.subtitle === undefined ? null : (
                   <div className="text-caption text-text-2 truncate">{row.subtitle}</div>
                 )}

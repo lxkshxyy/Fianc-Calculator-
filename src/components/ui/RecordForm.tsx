@@ -267,7 +267,7 @@ export function SelectField({
           ))}
         </select>
       </label>
-      <p className={'text-caption min-h-[18px] ' + (invalid ? 'text-danger' : 'text-text-2')}>
+      <p className={'text-caption min-h-[26px] pb-2 ' + (invalid ? 'text-danger' : 'text-text-2')}>
         {invalid ? error : (hint ?? '')}
       </p>
     </div>

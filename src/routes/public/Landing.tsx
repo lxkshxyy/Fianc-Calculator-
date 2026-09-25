@@ -1,5 +1,6 @@
 import {
   Bot,
+  ChevronDown,
   CreditCard,
   GraduationCap,
   Languages,
@@ -300,8 +301,13 @@ export function Landing() {
         <div className="divide-border rounded-card border-border bg-surface mt-4 divide-y overflow-hidden border">
           {FAQS.map((faq, index) => (
             <details key={faq.q} open={index === 0} className="group">
-              <summary className="text-text hover:bg-surface-2 focus-visible:outline-text-2 cursor-pointer list-none px-4 py-4 text-sm font-medium marker:hidden focus-visible:outline-2 focus-visible:-outline-offset-2">
-                {faq.q}
+              {/* The chevron is the only sign a question opens — the marker is hidden. */}
+              <summary className="text-text hover:bg-surface-2 focus-visible:outline-text-2 flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 text-sm font-medium marker:hidden focus-visible:outline-2 focus-visible:-outline-offset-2">
+                <span>{faq.q}</span>
+                <ChevronDown
+                  aria-hidden
+                  className="text-text-3 mt-0.5 size-4 shrink-0 transition-transform duration-150 group-open:rotate-180"
+                />
               </summary>
               <p className="text-text-2 px-4 pb-4 text-sm">{faq.a}</p>
             </details>

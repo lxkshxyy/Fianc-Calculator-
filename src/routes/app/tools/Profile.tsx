@@ -1,29 +1,20 @@
-import { Camera, Check, ImagePlus, Languages, Trash2, UserRound } from 'lucide-react'
+import { Camera, Check, Gem, ImagePlus, KeyRound, Trash2, UserRound } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import { APP_BASE } from '@/app/nav/navigation'
 import { AppButton } from '@/components/ui/AppButton'
 import { Avatar, PresetArt } from '@/components/ui/Avatar'
 import { AVATAR_PRESETS, presetRef } from '@/components/ui/avatarPresets'
 import { Card } from '@/components/ui/Card'
 import { TextField } from '@/components/ui/TextField'
 import { TierBadge } from '@/components/ui/TierBadge'
-import type { Language } from '@/data/schema/profile'
-import { useData, useProfile } from '@/data/store/data'
+import { useData, useProfile, useSnapshot } from '@/data/store/data'
 import { useSession } from '@/data/store/session'
 import { useT } from '@/i18n'
 import { photoToAvatar } from '@/lib/avatar'
 import { cn } from '@/lib/cn'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
-
-/**
- * Written in each language's own script, never translated — see Settings for
- * why: the person looking for Hindi is scanning for "हिन्दी". Adding a language
- * is a dictionary in src/i18n plus one line here.
- */
-const LANGUAGES: { id: Language; label: string }[] = [
-  { id: 'en', label: 'English' },
-  { id: 'hi', label: 'हिन्दी' },
-]
 
 function mobileOk(input: string): boolean {
   const digits = input.replace(/\D/g, '').replace(/^(?:91|0)(?=\d{10}$)/, '')
@@ -32,7 +23,8 @@ function mobileOk(input: string): boolean {
 
 /**
  * The person's own corner: what they are called, what they look like in the
- * app, and which language it speaks to them in.
+ * app, and which plan they are on — with the way to Diamond right under it.
+ * (Language lives in Settings, with the other ways of setting the app up.)
  *
  * A picture is saved the moment it is picked — choosing an avatar is not a form
  * anyone expects to submit — while the name and contact details wait for Save,
@@ -49,8 +41,15 @@ export function Profile() {
   const [draft, setDraft] = useState<{ name: string; phone: string; email: string } | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const snapshot = useSnapshot()
+  const navigate = useNavigate()
 
   if (profile === null) return null
+
+  const upgradePending =
+    snapshot?.requests.some(
+      (request) => request.service === 'diamond-upgrade' && request.status !== 'closed',
+    ) ?? false
 
   /* The form shows the stored values until the person starts typing. */
   const values = draft ?? {
@@ -125,6 +124,60 @@ export function Profile() {
           </div>
         </div>
       </Card>
+
+      <ModuleSection label={t('settings.membership')}>
+        <Card>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-text font-medium">
+                {profile.tier === 'diamond' ? 'Diamond' : 'Silver'}
+              </p>
+              <p className="text-caption text-text-2">
+                {profile.tier === 'diamond'
+                  ? t('settings.allStages')
+                  : upgradePending
+                    ? t('settings.upgradePendingLine')
+                    : t('settings.twoStages')}
+              </p>
+            </div>
+            <TierBadge tier={profile.tier} />
+            {/*
+             * The tier switcher is how lock states get checked without a payment
+             * provider — useful to whoever is building this, and nothing a
+             * customer should ever be shown. `import.meta.env.DEV` is false in
+             * `npm run build`, so Rollup drops this whole branch: it is present
+             * under `npm run dev` and physically absent from the APK.
+             */}
+            {import.meta.env.DEV ? (
+              <AppButton
+                variant="ghost"
+                onClick={() => {
+                  void saveProfile({ tier: profile.tier === 'diamond' ? 'silver' : 'diamond' })
+                }}
+              >
+                {profile.tier === 'diamond' ? 'Switch to Silver' : 'Switch to Diamond'}
+              </AppButton>
+            ) : null}
+          </div>
+          {profile.tier === 'diamond' ? null : (
+            <AppButton
+              variant="primary"
+              block
+              className="mt-4"
+              onClick={() => {
+                void navigate(`${APP_BASE}/upgrade`)
+              }}
+            >
+              {upgradePending ? (
+                <KeyRound aria-hidden className="size-4" />
+              ) : (
+                <Gem aria-hidden className="size-4" />
+              )}
+              {upgradePending ? t('settings.upgradePending') : t('settings.upgrade')}
+            </AppButton>
+          )}
+        </Card>
+      </ModuleSection>
 
       <input
         ref={galleryInput}
@@ -269,34 +322,6 @@ export function Profile() {
               ) : null}
             </div>
           </form>
-        </Card>
-      </ModuleSection>
-
-      <ModuleSection label={t('settings.language')}>
-        <Card>
-          <div className="flex items-center gap-2.5">
-            <Languages aria-hidden className="text-text-2 size-4" />
-            <div className="flex flex-wrap gap-2">
-              {LANGUAGES.map((language) => (
-                <button
-                  key={language.id}
-                  type="button"
-                  onClick={() => {
-                    void saveProfile({ language: language.id })
-                  }}
-                  aria-pressed={profile.language === language.id}
-                  className={
-                    profile.language === language.id
-                      ? 'bg-gold text-on-gold min-h-11 rounded-full px-4 text-sm font-medium'
-                      : 'border-border text-text-2 hover:border-border-strong min-h-11 rounded-full border px-4 text-sm'
-                  }
-                >
-                  {language.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-caption text-text-3 mt-3">{t('settings.languageNote')}</p>
         </Card>
       </ModuleSection>
     </ModuleScreen>

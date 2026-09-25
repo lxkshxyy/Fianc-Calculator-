@@ -71,11 +71,16 @@ screen is never a blank page.
 
 ## How a member gets Diamond (no payment provider yet)
 
-1. They tap **Upgrade to Diamond** (Settings, or the Silver pill in the header)
-   and send a request. It gets a reference like `WRC-D7K3P9Q`.
-2. The WRC team calls them, agrees the plan and takes payment.
-3. The team runs `node scripts/diamond-code.mjs WRC-D7K3P9Q` and reads them the
-   code it prints. They type it into the Upgrade screen; Diamond opens.
+1. They tap **Upgrade to Diamond** (Profile → Membership, or the Silver pill in
+   the header) and send a request. It gets a reference like `WRC-D7K3P9Q`.
+2. The request reaches the WRC team: automatically on WhatsApp once the n8n
+   automation is running (`automation/README.md`), otherwise through the
+   member's "Send on WhatsApp" button to the number in `src/config/contact.ts`.
+3. The team calls them, agrees the plan and takes payment.
+4. The team replies `PAID WRC-D7K3P9Q` on WhatsApp and n8n sends the code to the
+   member's mobile (WhatsApp, or SMS if that fails). Without the automation, run
+   `node scripts/diamond-code.mjs WRC-D7K3P9Q` and read them the code.
+5. They type it into the Upgrade screen; Diamond opens.
 
 A code only works for its own reference. The signing key is in
 `src/config/activation.json`; changing it invalidates every code handed out.

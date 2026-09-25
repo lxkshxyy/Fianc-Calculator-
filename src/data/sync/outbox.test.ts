@@ -11,6 +11,14 @@ vi.mock('@/config/server', () => ({
   },
   hasServer: () => server.url !== '',
 }))
+const automation = vi.hoisted(() => ({ url: '' }))
+vi.mock('@/config/automation', () => ({
+  get DIAMOND_WEBHOOK_URL() {
+    return automation.url
+  },
+  AUTOMATION_KEY: 'test-key',
+  hasAutomation: () => automation.url !== '',
+}))
 
 import { repo } from '../repo'
 import { deliverQueued } from './outbox'
@@ -22,6 +30,7 @@ describe('delivering to the WRC server', () => {
 
   afterEach(() => {
     server.url = ''
+    automation.url = ''
     vi.unstubAllGlobals()
   })
 
@@ -130,5 +139,113 @@ describe('delivering to the WRC server', () => {
       delivery: 'queued',
     })
     await expect(deliverQueued()).resolves.toBe(0)
+  })
+})
+
+describe('delivering Diamond requests to the automation', () => {
+  const diamond = (reference: string, delivery: 'queued' | 'sent' = 'queued') =>
+    repo.create('requests', {
+      reference,
+      service: 'diamond-upgrade',
+      status: 'submitted',
+      submittedAt: 1,
+      answers: { name: 'Asha', phone: '+91 98765 43210', email: 'a@b.in', bestTime: 'evening' },
+      consentGivenAt: 1,
+      delivery,
+    })
+
+  beforeEach(async () => {
+    await repo.clearEverything()
+  })
+
+  afterEach(() => {
+    server.url = ''
+    automation.url = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('posts the request with the app key and what the team needs, then marks it sent', async () => {
+    automation.url = 'https://n8n.example.test/webhook/wrc/diamond-request'
+    const fetchSpy = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(() =>
+      Promise.resolve(new Response('{"ok":true}', { status: 200 })),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    await diamond('WRC-DAAAAAA')
+    await diamond('WRC-DBBBBBB', 'sent')
+
+    expect(await deliverQueued()).toBe(1)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchSpy.mock.calls[0] ?? []
+    expect(url).toBe('https://n8n.example.test/webhook/wrc/diamond-request')
+    expect((init?.headers as Record<string, string>)['X-WRC-Key']).toBe('test-key')
+    expect(JSON.parse(typeof init?.body === 'string' ? init.body : '{}')).toMatchObject({
+      reference: 'WRC-DAAAAAA',
+      name: 'Asha',
+      phone: '+91 98765 43210',
+      email: 'a@b.in',
+      bestTime: 'evening',
+    })
+    const requests = (await repo.read()).requests
+    expect(requests.every((request) => request.delivery === 'sent')).toBe(true)
+  })
+
+  it('keeps it queued when the automation is down, and sends it on the next try', async () => {
+    automation.url = 'https://n8n.example.test/webhook/wrc/diamond-request'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
+    )
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await diamond('WRC-DCCCCCC')
+    expect(await deliverQueued()).toBe(0)
+    expect((await repo.read()).requests[0]?.delivery).toBe('queued')
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('{}', { status: 200 }))),
+    )
+    expect(await deliverQueued()).toBe(1)
+    expect((await repo.read()).requests[0]?.delivery).toBe('sent')
+  })
+
+  it('sends Diamond requests to the automation and the rest to the server — never both', async () => {
+    automation.url = 'https://n8n.example.test/hook'
+    server.url = 'https://api.example.test'
+    const fetchSpy = vi.fn<(url: string) => Promise<Response>>(() =>
+      Promise.resolve(new Response('{}', { status: 200 })),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    await diamond('WRC-DDDDDDD')
+    await repo.create('requests', {
+      reference: 'WRC-R000001',
+      service: 'insurance-review',
+      status: 'submitted',
+      submittedAt: 1,
+      answers: {},
+      consentGivenAt: 1,
+      delivery: 'queued',
+    })
+    expect(await deliverQueued()).toBe(2)
+    expect(fetchSpy.mock.calls.map((call) => call[0])).toEqual([
+      'https://n8n.example.test/hook',
+      'https://api.example.test/requests',
+    ])
+  })
+
+  it('never posts the same request twice when asked to deliver twice at once', async () => {
+    automation.url = 'https://n8n.example.test/hook'
+    const fetchSpy = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          setTimeout(() => {
+            resolve(new Response('{}', { status: 200 }))
+          }, 20)
+        }),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    await diamond('WRC-DEEEEEE')
+    const [first, second] = await Promise.all([deliverQueued(), deliverQueued()])
+    expect(first + second).toBeGreaterThanOrEqual(1)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 })

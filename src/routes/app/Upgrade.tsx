@@ -3,14 +3,16 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  Loader2,
   Gem,
   KeyRound,
   Lock,
   Mail,
   MessageCircle,
   Send,
+  WifiOff,
 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 
 import { AppButton } from '@/components/ui/AppButton'
 import { Card } from '@/components/ui/Card'
@@ -19,8 +21,8 @@ import { SectionLabel } from '@/components/ui/SectionLabel'
 import { Sheet } from '@/components/ui/Sheet'
 import { TextField } from '@/components/ui/TextField'
 import { TierBadge } from '@/components/ui/TierBadge'
+import { hasAutomation } from '@/config/automation'
 import { SUPPORT_EMAIL, WHATSAPP_NUMBER } from '@/config/contact'
-import { hasServer } from '@/config/server'
 import { nowMs } from '@/data/schema/common'
 import type { RequestTicket } from '@/data/schema'
 import { useData, useProfile, useSnapshot } from '@/data/store/data'
@@ -41,6 +43,11 @@ import { ModuleScreen } from './ModuleScreen'
  *
  * The code is checked on the phone against the request's own reference
  * (lib/activation.ts), so this works today with no server behind it.
+ *
+ * How the request reaches the team: with the n8n automation running
+ * (config/automation.ts) it is posted the moment it is saved, the team gets a
+ * WhatsApp, and after they reply PAID the code arrives on the member's number.
+ * Without it, "Send on WhatsApp" opens a chat with the team, everything typed.
  */
 
 type Row = { label: string; silver: boolean }
@@ -339,8 +346,19 @@ function PendingPanel({
   const [error, setError] = useState<string | undefined>(undefined)
   const [checking, setChecking] = useState(false)
   const [copied, setCopied] = useState(false)
-  const phone = typeof request.answers['phone'] === 'string' ? request.answers['phone'] : ''
-  const message = `Hello WRC team, I'd like to upgrade to Diamond. My request reference is ${request.reference}.`
+  const answer = (key: string): string =>
+    typeof request.answers[key] === 'string' ? request.answers[key] : ''
+  const phone = answer('phone')
+  const name = answer('name')
+  /* Everything the team needs, so a WhatsApp from the member is as good as the automation's alert. */
+  const message = [
+    `Hello WRC team, I'd like to upgrade to Diamond.`,
+    `Reference: ${request.reference}`,
+    name === '' ? null : `Name: ${name}`,
+    phone === '' ? null : `Mobile: ${phone}`,
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n')
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -363,37 +381,82 @@ function PendingPanel({
   }
 
   /*
-   * Honest about where the request actually is. With a server it has been
-   * delivered; without one it is saved on this phone, and the person is given
-   * the ways that exist today to get it to the team.
+   * Honest about where the request actually is: delivered to the team, on its
+   * way (the phone is offline, or the automation did not answer yet), or — with
+   * no automation set up — waiting for the member to send it themselves.
    */
-  const delivered = hasServer()
+  const delivered = request.delivery === 'sent'
+  const automatic = hasAutomation()
+  /*
+   * "Sending" for the first few seconds (the post is usually done in one), and
+   * only then "not sent yet" — which is what a phone with no signal will see.
+   * Showing the offline line straight away read as a failure on every request.
+   */
+  const [stillQueued, setStillQueued] = useState(false)
+  useEffect(() => {
+    if (delivered || !automatic) return
+    const timer = setTimeout(() => {
+      setStillQueued(true)
+    }, 8000)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [delivered, automatic])
+  const sending = automatic && !delivered && !stillQueued && navigator.onLine
+  const waLink =
+    WHATSAPP_NUMBER === ''
+      ? null
+      : `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
 
   return (
     <div className="space-y-4">
       <div className="rounded-tile bg-surface-2 p-3">
         <p className="text-meta text-text flex items-center gap-2 font-medium">
-          <Clock aria-hidden className="text-gold size-4 shrink-0" />
-          {delivered ? 'Request sent — the WRC team will call you' : 'Request ready to send'}
+          {delivered ? (
+            <CheckCircle2 aria-hidden className="text-success size-4 shrink-0" />
+          ) : sending ? (
+            <Loader2 aria-hidden className="text-gold size-4 shrink-0 animate-spin" />
+          ) : automatic ? (
+            <WifiOff aria-hidden className="text-text-2 size-4 shrink-0" />
+          ) : (
+            <Clock aria-hidden className="text-gold size-4 shrink-0" />
+          )}
+          {delivered
+            ? 'Request sent — the WRC team will call you'
+            : sending
+              ? 'Sending your request…'
+              : automatic
+                ? 'Not sent yet — it goes as soon as you are online'
+                : 'Request ready to send'}
         </p>
         <p className="text-caption text-text-2 mt-1">
           {delivered
-            ? `${phone === '' ? 'They will be in touch' : `They will call ${phone}`} to agree the plan and payment. Your reference:`
-            : 'Send this reference to the WRC team and they will call you to agree the plan and payment:'}
+            ? `${phone === '' ? 'They will be in touch' : `They will call ${phone}`} to agree the plan and payment. Your activation code then comes to ${phone === '' ? 'your number' : 'this number'} on WhatsApp, or by SMS. Your reference:`
+            : sending
+              ? 'Your reference:'
+              : automatic
+                ? 'Or send it on WhatsApp now. Your reference:'
+                : 'Send it to the WRC team on WhatsApp. They will call you to agree the plan and payment, then send your activation code. Your reference:'}
         </p>
         <p className="rounded-tile bg-surface text-text mt-2 inline-block px-3 py-1.5 font-mono text-sm tracking-wider">
           {request.reference}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {WHATSAPP_NUMBER === '' ? null : (
+          {waLink === null ? null : (
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`}
+              href={waLink}
               target="_blank"
               rel="noreferrer"
-              className="rounded-button border-border text-meta text-text hover:bg-surface inline-flex min-h-11 items-center gap-2 border px-3"
+              className={cn(
+                'rounded-button text-meta inline-flex min-h-11 items-center gap-2 px-3 font-medium',
+                /* The main way through when nothing else will carry the request. */
+                delivered
+                  ? 'border-border text-text hover:bg-surface border'
+                  : 'bg-gold text-on-gold hover:bg-gold-strong',
+              )}
             >
               <MessageCircle aria-hidden className="size-4" />
-              Send on WhatsApp
+              {delivered ? 'Message the team' : 'Send on WhatsApp'}
             </a>
           )}
           {SUPPORT_EMAIL === '' ? null : (
@@ -409,7 +472,7 @@ function PendingPanel({
             type="button"
             onClick={() => {
               void navigator.clipboard
-                ?.writeText(`${message}${phone === '' ? '' : ` Please call me on ${phone}.`}`)
+                ?.writeText(message)
                 .then(() => {
                   setCopied(true)
                 })
@@ -520,7 +583,7 @@ function RequestSheet({
           placeholder="98765 43210"
           value={phone}
           error={errors['phone']}
-          hint="The number the team should call."
+          hint="The team calls this number, and sends your code to it."
           onChange={(event) => {
             setPhone(event.target.value)
           }}

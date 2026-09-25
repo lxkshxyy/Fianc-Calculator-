@@ -96,7 +96,7 @@ export function NumberField({
       />
       <p
         id={id + '-hint'}
-        className={cn('text-caption min-h-[18px]', showError ? 'text-danger' : 'text-text-2')}
+        className={cn('text-caption min-h-[26px] pb-2', showError ? 'text-danger' : 'text-text-2')}
       >
         {unreadable
           ? t('form.unreadableAmount')

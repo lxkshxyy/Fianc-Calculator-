@@ -56,8 +56,9 @@ export function IncomeOpportunities() {
             id: idea.id,
             icon: Sparkles,
             title: idea.title,
-            subtitle: idea.effort,
-            meta: idea.horizon,
+            /* One line under the idea rather than a right-hand column: the column
+               squeezed every idea down to its first two words on a phone. */
+            subtitle: `${idea.effort} · ${idea.horizon}`,
           }))}
           empty={{
             icon: Sparkles,

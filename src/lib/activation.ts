@@ -6,10 +6,12 @@ import activation from '@/config/activation.json'
  *
  * ── The flow ────────────────────────────────────────────────────────────────
  *   1. A Silver member sends a Diamond request from the Upgrade screen. It gets
- *      a reference like WRC-D7K3P9.
- *   2. The team confirms the plan and payment with them, then runs
- *        node scripts/diamond-code.mjs WRC-D7K3P9
- *      and reads them the eight-character code it prints.
+ *      a reference like WRC-D7K3P9Q.
+ *   2. The team confirms the plan and payment with them. With the automation
+ *      running (automation/README.md) they reply "PAID WRC-D7K3P9Q" on WhatsApp
+ *      and n8n sends the member the code; by hand, they run
+ *        node scripts/diamond-code.mjs WRC-D7K3P9Q
+ *      and read them the eight-character code it prints.
  *   3. They type it in; the app checks it against their own reference and
  *      opens Diamond.
  *

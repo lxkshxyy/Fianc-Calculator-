@@ -1,0 +1,42 @@
+# n8n + a public HTTPS address for it, on your own PC.
+#
+#   1. Copy .env.example to .env and fill in the two ngrok values.
+#   2. docker compose up -d        (Docker Desktop must be running)
+#   3. Open http://localhost:5678 and import WRC-Diamond-Automation.json
+#
+# Both services restart with Docker, so the automation is live whenever the PC
+# is on. When it is off, the app keeps requests on the phone and sends them
+# later, and Meta re-delivers your WhatsApp replies once n8n is back.
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - '5678:5678'
+    environment:
+      - GENERIC_TIMEZONE=Asia/Kolkata
+      - TZ=Asia/Kolkata
+      # The address the outside world uses — n8n shows it on webhook nodes.
+      - WEBHOOK_URL=https://${NGROK_DOMAIN}/
+      - N8N_PROXY_HOPS=1
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_RUNNERS_TASK_TIMEOUT=300
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    depends_on:
+      - n8n
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    # Your free static domain from dashboard.ngrok.com → Domains, so the address
+    # never changes (the app and Meta both remember it).
+    command: http --url=${NGROK_DOMAIN} n8n:5678
+    ports:
+      - '4040:4040'
+
+volumes:
+  n8n_data:

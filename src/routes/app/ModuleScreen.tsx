@@ -39,18 +39,25 @@ export function ModuleScreen({
 
   return (
     <div className="space-y-6 pb-4">
+      {/*
+       * On a phone the sticky app header already carries the screen's title, so
+       * repeating it here in 34px type read as "Settings / Settings", and once
+       * the page scrolled a little the subtitle was left hanging, indented by an
+       * icon that had gone under the header. Below lg the title is left to the
+       * app header and the icon sits beside the subtitle instead.
+       */}
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+        <div className="flex min-w-0 items-center gap-3 lg:items-start">
           {Icon === undefined ? null : (
-            <span className="rounded-tile bg-surface-2 mt-1 p-2">
+            <span className="rounded-tile bg-surface-2 shrink-0 p-2 lg:mt-1">
               <Icon aria-hidden className="text-gold size-5" />
             </span>
           )}
-          <div>
-            <h1 className="text-page text-text font-semibold tracking-tight text-balance">
+          <div className="min-w-0">
+            <h1 className="text-page text-text hidden font-semibold tracking-tight text-balance lg:block">
               {title}
             </h1>
-            <p className="text-text-2 mt-1 max-w-prose text-sm">{subtitle}</p>
+            <p className="text-text-2 max-w-prose text-sm lg:mt-1">{subtitle}</p>
           </div>
         </div>
         {action}

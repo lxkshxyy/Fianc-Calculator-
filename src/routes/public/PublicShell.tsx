@@ -33,11 +33,17 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="bg-bg min-h-dvh">
-      <header className="border-border bg-bg-elevated/95 sticky top-0 z-40 border-b backdrop-blur">
+      <header className="border-border bg-bg-elevated sticky top-0 z-40 border-b">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-3 px-4 sm:px-6">
           <Link to="/" className="rounded-tile text-text flex items-center gap-2 font-semibold">
             <Sparkles aria-hidden className="text-accent size-4" />
-            <Wordmark className="text-body" />
+            {/*
+             * WRC on a phone, the full name from sm up: beside the theme toggle,
+             * "Get started" and the menu, the full name wrapped onto two lines
+             * and squeezed "Get started" onto two more.
+             */}
+            <Wordmark short className="text-body sm:hidden" />
+            <Wordmark className="text-body hidden sm:inline" />
           </Link>
 
           <nav aria-label="Main" className="ml-6 hidden flex-1 gap-5 lg:flex">
@@ -61,7 +67,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
               Login
             </Link>
             <Link to="/auth?mode=signup">
-              <AppButton size="sm">Get started</AppButton>
+              <AppButton size="sm" className="whitespace-nowrap">
+                Get started
+              </AppButton>
             </Link>
             <button
               type="button"

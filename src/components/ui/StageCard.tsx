@@ -58,6 +58,8 @@ export function StageCard({
          * tier badge past the edge. The caller owns the width; the card fills it.
          */
         'rounded-card relative flex w-full flex-col gap-3 border p-4',
+        /* Room under the CURRENT tab so it never touches the stage icon. */
+        isCurrent && 'pt-6',
         'transition-colors duration-150',
         isCurrent ? 'border-gold bg-surface' : 'border-border bg-surface',
         isLocked && 'opacity-70',
@@ -65,7 +67,12 @@ export function StageCard({
       )}
     >
       {isCurrent ? (
-        <span className="rounded-pill bg-gold text-micro text-on-gold absolute -top-2 left-4 px-2 py-0.5 font-semibold tracking-[0.1em] uppercase">
+        /*
+         * Centred on the top border (top-0 + -translate-y-1/2) rather than 8px
+         * above it: at -top-2 two-thirds of the tab hung inside the card and sat
+         * on the stage icon.
+         */
+        <span className="rounded-pill bg-gold text-micro text-on-gold absolute top-0 left-4 -translate-y-1/2 px-2 py-0.5 leading-4 font-semibold tracking-[0.1em] uppercase">
           Current
         </span>
       ) : null}

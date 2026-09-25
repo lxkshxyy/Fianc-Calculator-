@@ -2,12 +2,13 @@
 /**
  * Prints the Diamond activation code for a request reference.
  *
- *   node scripts/diamond-code.mjs WRC-D7K3P9
+ *   node scripts/diamond-code.mjs WRC-D7K3P9Q
  *
  * Run it once the member has paid; read them the code; they type it into the
  * Upgrade screen and Diamond opens. The code only works for that reference.
  *
- * Mirrors src/lib/activation.ts — same key, same HMAC, same alphabet.
+ * Mirrors src/lib/activation.ts — same key, same HMAC, same alphabet — and so
+ * does the n8n workflow in automation/n8n, which sends the code by itself.
  */
 import { createHmac } from 'node:crypto'
 import { readFileSync } from 'node:fs'

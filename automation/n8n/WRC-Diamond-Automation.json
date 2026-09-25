@@ -1,0 +1,2118 @@
+{
+  "name": "WRC · Diamond upgrade automation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 💎 WRC · Diamond upgrade automation\n1. Customer taps **Request Diamond** in the app → the app posts here → **you get a WhatsApp alert** (SMS if WhatsApp fails).\n2. You call them and take the payment.\n3. On WhatsApp, reply **PAID WRC-DXXXXXX** (optionally the amount: `PAID WRC-DXXXXXX 4999`).\n4. The code goes to the customer's login number on WhatsApp (SMS if WhatsApp fails) and you get a ✅ with the code.\n\nOther replies: **RESEND WRC-DXXXXXX**, **PENDING** (open requests), anything else = help.\nFill in **Settings** first. Requests are kept in the data table `wrc_diamond_requests` (Overview → Data tables).",
+        "width": 720,
+        "height": 300,
+        "color": 4
+      },
+      "id": "7a3c0001-3d2e-4f10-9b1a-0c5e8d000001",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wrc/diamond-request",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "7a3c0002-3d2e-4f10-9b1a-0c5e8d000002",
+      "name": "App · Diamond request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "4b1f6c2e-8d3a-4e7b-9c10-5a2d7e9f1b01"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "wrc/whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7a3c0003-3d2e-4f10-9b1a-0c5e8d000003",
+      "name": "WhatsApp · verify",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        540
+      ],
+      "webhookId": "4b1f6c2e-8d3a-4e7b-9c10-5a2d7e9f1b02"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wrc/whatsapp",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "7a3c0004-3d2e-4f10-9b1a-0c5e8d000004",
+      "name": "WhatsApp · events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        900
+      ],
+      "webhookId": "4b1f6c2e-8d3a-4e7b-9c10-5a2d7e9f1b03"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⚙️  SETTINGS — the only node you need to edit.\n// Every other node reads its values from here. After filling it in, keep this\n// workflow private: it holds your WhatsApp token.\n\nconst SETTINGS = {\n  // Who gets new-request alerts, and who may send PAID / RESEND / PENDING.\n  // Country code + number, digits only. Add teammates to the list.\n  adminNumbers: ['918744855792'],\n\n  // Must match AUTOMATION_KEY in the app: src/config/automation.ts\n  appKey: 'wrc-app-c5hxrzfh4aq5qemf6h4nejff',\n\n  // Must match src/config/activation.json in the app — the key that signs codes.\n  activationSecret: 'U9fdxiZl_DiXV6n310z-rePks9FFMhks',\n\n  whatsapp: {\n    // WhatsApp Cloud API (Meta). developers.facebook.com → your app → WhatsApp → API Setup\n    graphBase: 'https://graph.facebook.com/v23.0',\n    phoneNumberId: '',        // \"Phone number ID\" (not the phone number itself)\n    accessToken: '',          // permanent System User token (the API Setup one expires in 24 h)\n    verifyToken: 'wrc-verify-re2m0q5g2pjd822r', // type this same text in Meta → WhatsApp → Configuration → Webhook\n    appSecret: '',            // Meta app → App settings → Basic → App secret. Proves a message really came from Meta.\n    skipSignatureCheck: false,  // never true on a public URL\n\n    // Messages you start (the alert to you, the code to the customer) must be\n    // approved templates. Names below must match WhatsApp Manager exactly.\n    // false = plain text, which only works within 24 h of that person messaging\n    // your WhatsApp number (handy for a first demo on the test number).\n    useTemplates: true,\n    templateLanguage: 'en',\n    adminAlertTemplate: 'wrc_diamond_request', // body variables: {{1}} ref, {{2}} name, {{3}} mobile, {{4}} best time, {{5}} ref again\n    customerCodeTemplate: 'wrc_diamond_code',  // body variables: {{1}} name, {{2}} code, {{3}} ref\n  },\n\n  sms: {\n    // Used when WhatsApp fails. Fast2SMS \"Quick SMS\" works without DLT (needs a\n    // ₹100 recharge + KYC). With no key yet, an SMS attempt simply fails and\n    // the ✅/⚠️ reply tells you to read the code out on the call.\n    url: 'https://www.fast2sms.com/dev/bulkV2',\n    apiKey: '',\n  },\n};\n\n// Which door this run came in through.\nconst route = $('WhatsApp · verify').isExecuted\n  ? 'verify'\n  : $('WhatsApp · events').isExecuted\n    ? 'event'\n    : 'request';\n\nreturn $input.all().map((item) => ({\n  json: { route, cfg: SETTINGS, req: item.json },\n  binary: item.binary,\n}));"
+      },
+      "id": "7a3c0005-3d2e-4f10-9b1a-0c5e8d000005",
+      "name": "Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ ({ request: 0, verify: 1, event: 2 })[$json.route] }}"
+      },
+      "id": "7a3c0006-3d2e-4f10-9b1a-0c5e8d000006",
+      "name": "Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Outputs: **0** app request · **1** Meta webhook check · **2** WhatsApp message/status",
+        "width": 260,
+        "height": 90,
+        "color": 7
+      },
+      "id": "7a3c0007-3d2e-4f10-9b1a-0c5e8d000007",
+      "name": "Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        650
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Checks what the app sent before anything is stored or anyone is messaged.\nconst { cfg, req } = $input.first().json;\nconst body = req.body && typeof req.body === 'object' ? req.body : {};\nconst headers = req.headers || {};\nconst fail = (status, error) => [{ json: { ok: false, status, error } }];\n\nconst key = String(headers['x-wrc-key'] ?? body.key ?? '');\nif (!cfg.appKey || key !== cfg.appKey) return fail(401, 'Unknown app key');\n\nconst reference = String(body.reference ?? '').trim().toUpperCase();\nif (!/^WRC-D[0-9A-Z]{6}$/.test(reference)) return fail(400, 'Bad reference');\n\nconst digits = String(body.phone ?? '').replace(/\\D/g, '').replace(/^(?:91|0)(?=\\d{10}$)/, '');\nif (!/^[6-9]\\d{9}$/.test(digits)) return fail(400, 'Bad mobile number');\n\n// Template variables may not hold newlines or long runs of spaces.\nconst clean = (value, max) =>\n  String(value ?? '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\nconst email = clean(body.email, 120);\nconst TIMES = { any: 'Any time', morning: 'Morning (9-12)', afternoon: 'Afternoon (12-5)', evening: 'Evening (5-8)' };\n\nreturn [{\n  json: {\n    ok: true,\n    row: {\n      reference,\n      name: clean(body.name, 60) || 'Customer',\n      phone: '91' + digits,\n      email: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email : '',\n      bestTime: TIMES[body.bestTime] || 'Any time',\n      status: 'pending',\n      requestedAt: new Date().toISOString(),\n      adminAlert: 'sending',\n      adminAlertId: '',\n      paidAt: '',\n      amount: '',\n      code: '',\n      codeVia: '',\n      codeMessageId: '',\n    },\n  },\n}];"
+      },
+      "id": "7a3c0008-3d2e-4f10-9b1a-0c5e8d000008",
+      "name": "Check request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7a3c0009-3d2e-4f10-9b1a-0c5e8d000009",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7a3c0010-3d2e-4f10-9b1a-0c5e8d000010",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: $json.error }) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}"
+        }
+      },
+      "id": "7a3c0011-3d2e-4f10-9b1a-0c5e8d000011",
+      "name": "Reply · rejected",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "wrc_diamond_requests",
+        "columns": {
+          "column": [
+            {
+              "name": "reference",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "bestTime",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "requestedAt",
+              "type": "string"
+            },
+            {
+              "name": "adminAlert",
+              "type": "string"
+            },
+            {
+              "name": "adminAlertId",
+              "type": "string"
+            },
+            {
+              "name": "paidAt",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "string"
+            },
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "codeVia",
+              "type": "string"
+            },
+            {
+              "name": "codeMessageId",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "7a3c0012-3d2e-4f10-9b1a-0c5e8d000012",
+      "name": "Ensure table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        -180
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Check request').first().json.row.reference }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "7a3c0013-3d2e-4f10-9b1a-0c5e8d000013",
+      "name": "Find request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        -180
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7a3c0014-3d2e-4f10-9b1a-0c5e8d000014",
+              "leftValue": "={{ !$json.reference }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7a3c0015-3d2e-4f10-9b1a-0c5e8d000015",
+      "name": "New request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1680,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, duplicate: true, reference: $('Check request').first().json.row.reference }) }}",
+        "options": {}
+      },
+      "id": "7a3c0016-3d2e-4f10-9b1a-0c5e8d000016",
+      "name": "Reply · already have it",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $('Check request').first().json.row }];"
+      },
+      "id": "7a3c0017-3d2e-4f10-9b1a-0c5e8d000017",
+      "name": "Row · new",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7a3c0018-3d2e-4f10-9b1a-0c5e8d000018",
+      "name": "Save request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, reference: $('Check request').first().json.row.reference }) }}",
+        "options": {}
+      },
+      "id": "7a3c0019-3d2e-4f10-9b1a-0c5e8d000019",
+      "name": "Reply · received",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One alert per admin number, as a template (or plain text — see Settings).\nconst cfg = $('Settings').first().json.cfg;\nconst row = $('Check request').first().json.row;\nconst pretty = (p) => '+' + p.slice(0, 2) + ' ' + p.slice(2, 7) + ' ' + p.slice(7);\nconst text =\n  '💎 New Diamond request ' + row.reference + '\\n' +\n  'Name: ' + row.name + '\\n' +\n  'Mobile: ' + pretty(row.phone) + '\\n' +\n  'Best time: ' + row.bestTime +\n  (row.email ? '\\nEmail: ' + row.email : '') + '\\n\\n' +\n  'Call them, take the payment, then reply:\\nPAID ' + row.reference;\nconst smsText = 'WRC: New Diamond request ' + row.reference + ' from ' + row.name + ', ' + pretty(row.phone) +\n  '. After payment reply on WhatsApp: PAID ' + row.reference;\n\nreturn cfg.adminNumbers.map((to) => {\n  const message = cfg.whatsapp.useTemplates\n    ? {\n        messaging_product: 'whatsapp', to, type: 'template',\n        template: {\n          name: cfg.whatsapp.adminAlertTemplate,\n          language: { code: cfg.whatsapp.templateLanguage },\n          components: [{ type: 'body', parameters: [\n            { type: 'text', text: row.reference },\n            { type: 'text', text: row.name },\n            { type: 'text', text: pretty(row.phone) },\n            { type: 'text', text: row.bestTime },\n            { type: 'text', text: row.reference }, // {{5}}: the reference again, in \"reply PAID …\"\n          ] }],\n        },\n      }\n    : { messaging_product: 'whatsapp', to, type: 'text', text: { preview_url: false, body: text } };\n  return { json: { to, message, smsText, reference: row.reference } };\n});"
+      },
+      "id": "7a3c0020-3d2e-4f10-9b1a-0c5e8d000020",
+      "name": "Alert messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.whatsapp.graphBase }}/{{ $('Settings').first().json.cfg.whatsapp.phoneNumberId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Settings').first().json.cfg.whatsapp.accessToken }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.message) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0021-3d2e-4f10-9b1a-0c5e8d000021",
+      "name": "WhatsApp · alert admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2880,
+        -360
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { adminAlert: 'whatsapp', adminAlertId: String($input.first().json.messages?.[0]?.id ?? '') } }];"
+      },
+      "id": "7a3c0022-3d2e-4f10-9b1a-0c5e8d000022",
+      "name": "Row · alert on WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        -540
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.sms.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "={{ $('Settings').first().json.cfg.sms.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ route: 'q', message: $('Alert messages').item.json.smsText, language: 'english', flash: 0, numbers: String($('Alert messages').item.json.to).slice(-10) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0023-3d2e-4f10-9b1a-0c5e8d000023",
+      "name": "SMS · alert admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3120,
+        -180
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { adminAlert: $input.first().json.return === false ? 'failed' : 'sms' } }];"
+      },
+      "id": "7a3c0024-3d2e-4f10-9b1a-0c5e8d000024",
+      "name": "Row · alert by SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { adminAlert: 'failed' } }];"
+      },
+      "id": "7a3c0025-3d2e-4f10-9b1a-0c5e8d000025",
+      "name": "Row · alert failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Check request').first().json.row.reference }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7a3c0026-3d2e-4f10-9b1a-0c5e8d000026",
+      "name": "Save alert result",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3600,
+        -360
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7a3c0027-3d2e-4f10-9b1a-0c5e8d000027",
+              "leftValue": "={{ $json.req.query['hub.mode'] === 'subscribe' && $json.req.query['hub.verify_token'] === $json.cfg.whatsapp.verifyToken }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7a3c0028-3d2e-4f10-9b1a-0c5e8d000028",
+      "name": "Token matches?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.req.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "id": "7a3c0029-3d2e-4f10-9b1a-0c5e8d000029",
+      "name": "Reply · challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        960,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Forbidden",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "7a3c0030-3d2e-4f10-9b1a-0c5e8d000030",
+      "name": "Reply · forbidden",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        960,
+        630
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "EVENT_RECEIVED",
+        "options": {}
+      },
+      "id": "7a3c0031-3d2e-4f10-9b1a-0c5e8d000031",
+      "name": "Reply · 200 to Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── HMAC-SHA256, in plain JavaScript ────────────────────────────────────────\n// n8n's Code node may not load Node's 'crypto' module (NODE_FUNCTION_ALLOW_BUILTIN),\n// so the two hashes this workflow needs are done by hand. Checked against Node's\n// crypto and against the app's own activation codes.\nfunction sha256(bytes) {\n  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];\n  const len = bytes.length;\n  const total = ((len + 9 + 63) >> 6) << 6;\n  const m = new Uint8Array(total);\n  m.set(bytes); m[len] = 0x80;\n  const bits = len * 8;\n  const view = new DataView(m.buffer);\n  view.setUint32(total - 8, Math.floor(bits / 0x100000000));\n  view.setUint32(total - 4, bits >>> 0);\n  const w = new Uint32Array(64);\n  const r = (x, n) => (x >>> n) | (x << (32 - n));\n  for (let off = 0; off < total; off += 64) {\n    for (let i = 0; i < 16; i++) w[i] = view.getUint32(off + i * 4);\n    for (let i = 16; i < 64; i++) {\n      const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3);\n      const s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);\n      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;\n    }\n    let [a, b, c, d, e, f, g, h] = H;\n    for (let i = 0; i < 64; i++) {\n      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;\n      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;\n      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;\n    }\n    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;\n    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;\n  }\n  const out = new Uint8Array(32);\n  const ov = new DataView(out.buffer);\n  H.forEach((v, i) => ov.setUint32(i * 4, v));\n  return out;\n}\nfunction hmacSha256(keyBytes, msgBytes) {\n  let key = keyBytes.length > 64 ? sha256(keyBytes) : keyBytes;\n  const k = new Uint8Array(64); k.set(key);\n  const ipad = new Uint8Array(64 + msgBytes.length), opad = new Uint8Array(64 + 32);\n  for (let i = 0; i < 64; i++) { ipad[i] = k[i] ^ 0x36; opad[i] = k[i] ^ 0x5c; }\n  ipad.set(msgBytes, 64);\n  opad.set(sha256(ipad), 64);\n  return sha256(opad);\n}\nconst utf8 = (text) => new TextEncoder().encode(String(text));\nconst toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');\n\n// Reads what Meta sent: commands from an admin, or a message that failed.\nconst { cfg, req } = $input.first().json;\n\n// 1. Prove it came from Meta — the X-Hub-Signature-256 header is an HMAC of the\n//    exact bytes received, keyed with your app secret.\nif (!cfg.whatsapp.skipSignatureCheck) {\n  const header = String((req.headers || {})['x-hub-signature-256'] || '');\n  if (!cfg.whatsapp.appSecret) throw new Error('Settings: whatsapp.appSecret is empty — messages cannot be checked.');\n  let raw;\n  try {\n    raw = await this.helpers.getBinaryDataBuffer(0, 'data');\n  } catch (error) {\n    throw new Error('Raw body missing: the \"WhatsApp · events\" webhook needs Options → Raw Body on.');\n  }\n  const expected = 'sha256=' + toHex(hmacSha256(utf8(cfg.whatsapp.appSecret), new Uint8Array(raw)));\n  if (header !== expected) return []; // not from Meta: ignore silently\n}\n\nconst payload = req.body && typeof req.body === 'object' ? req.body : {};\nconst admins = new Set(cfg.adminNumbers.map(String));\nconst items = [];\n\nfor (const entry of payload.entry || []) {\n  for (const change of entry.changes || []) {\n    const value = change.value || {};\n    for (const message of value.messages || []) {\n      const from = String(message.from || '');\n      if (!admins.has(from)) continue; // only admins can give commands\n      // Typed text, or a template quick-reply button's payload if you add one later.\n      const text = String(message.text?.body ?? message.button?.payload ?? message.button?.text ?? message.interactive?.button_reply?.id ?? '').trim();\n      const upper = text.toUpperCase().replace(/s+/g, ' ');\n      const verb = (upper.match(/^[A-Z]+/) || [''])[0];\n      const rest = upper.slice(verb.length).trim();\n      let cmd = 'HELP';\n      if (['PAID', 'PAYMENT', 'CONFIRM', 'CONFIRMED', 'DONE'].includes(verb)) cmd = 'PAID';\n      else if (['RESEND', 'CODE'].includes(verb)) cmd = 'RESEND';\n      else if (['PENDING', 'LIST', 'REQUESTS'].includes(verb)) cmd = 'PENDING';\n      // \"WRC-D7K3P9Q\", \"wrc d7k3p9q\", \"D7K3P9Q\" and \"7K3P9Q\" all mean the same request.\n      // O → 0 and I/L → 1, as in the app: references never use O, I or L.\n      const m = rest.match(/^(?:WRC ?-? ?)?D?([0-9A-Z]{6})(?![0-9A-Z])(.*)$/);\n      const ref = m ? 'WRC-D' + m[1].replace(/O/g, '0').replace(/[IL]/g, '1') : '';\n      const amount = m ? ((m[2].match(/([0-9][0-9,]*(?:.[0-9]{1,2})?)/) || [])[1] || '').replace(/,/g, '') : '';\n      if ((cmd === 'PAID' || cmd === 'RESEND') && !ref) cmd = 'HELP';\n      items.push({ json: { kind: 'command', cmd, ref, amount: cmd === 'PAID' ? amount : '', from, text, messageId: message.id } });\n    }\n    for (const status of value.statuses || []) {\n      if (status.status !== 'failed') continue;\n      items.push({ json: { kind: 'failed', messageId: String(status.id), to: String(status.recipient_id || ''), error: status.errors?.[0]?.code ?? '' } });\n    }\n  }\n}\nreturn items;"
+      },
+      "id": "7a3c0032-3d2e-4f10-9b1a-0c5e8d000032",
+      "name": "Read WhatsApp event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        936,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.kind === 'failed' ? 1 : 0 }}"
+      },
+      "id": "7a3c0033-3d2e-4f10-9b1a-0c5e8d000033",
+      "name": "Command or failure?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1152,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ ({ PAID: 0, RESEND: 0, PENDING: 1 })[$json.cmd] ?? 2 }}"
+      },
+      "id": "7a3c0034-3d2e-4f10-9b1a-0c5e8d000034",
+      "name": "Which command?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**0** PAID / RESEND · **1** PENDING · **2** anything else → help",
+        "width": 240,
+        "height": 80,
+        "color": 7
+      },
+      "id": "7a3c0035-3d2e-4f10-9b1a-0c5e8d000035",
+      "name": "Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        1190
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "wrc_diamond_requests",
+        "columns": {
+          "column": [
+            {
+              "name": "reference",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "bestTime",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "requestedAt",
+              "type": "string"
+            },
+            {
+              "name": "adminAlert",
+              "type": "string"
+            },
+            {
+              "name": "adminAlertId",
+              "type": "string"
+            },
+            {
+              "name": "paidAt",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "string"
+            },
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "codeVia",
+              "type": "string"
+            },
+            {
+              "name": "codeMessageId",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "7a3c0036-3d2e-4f10-9b1a-0c5e8d000036",
+      "name": "Ensure table (commands)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        900
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Read WhatsApp event').item.json.ref }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "7a3c0037-3d2e-4f10-9b1a-0c5e8d000037",
+      "name": "Find request (command)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        900
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── HMAC-SHA256, in plain JavaScript ────────────────────────────────────────\n// n8n's Code node may not load Node's 'crypto' module (NODE_FUNCTION_ALLOW_BUILTIN),\n// so the two hashes this workflow needs are done by hand. Checked against Node's\n// crypto and against the app's own activation codes.\nfunction sha256(bytes) {\n  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];\n  const len = bytes.length;\n  const total = ((len + 9 + 63) >> 6) << 6;\n  const m = new Uint8Array(total);\n  m.set(bytes); m[len] = 0x80;\n  const bits = len * 8;\n  const view = new DataView(m.buffer);\n  view.setUint32(total - 8, Math.floor(bits / 0x100000000));\n  view.setUint32(total - 4, bits >>> 0);\n  const w = new Uint32Array(64);\n  const r = (x, n) => (x >>> n) | (x << (32 - n));\n  for (let off = 0; off < total; off += 64) {\n    for (let i = 0; i < 16; i++) w[i] = view.getUint32(off + i * 4);\n    for (let i = 16; i < 64; i++) {\n      const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3);\n      const s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);\n      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;\n    }\n    let [a, b, c, d, e, f, g, h] = H;\n    for (let i = 0; i < 64; i++) {\n      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;\n      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;\n      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;\n    }\n    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;\n    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;\n  }\n  const out = new Uint8Array(32);\n  const ov = new DataView(out.buffer);\n  H.forEach((v, i) => ov.setUint32(i * 4, v));\n  return out;\n}\nfunction hmacSha256(keyBytes, msgBytes) {\n  let key = keyBytes.length > 64 ? sha256(keyBytes) : keyBytes;\n  const k = new Uint8Array(64); k.set(key);\n  const ipad = new Uint8Array(64 + msgBytes.length), opad = new Uint8Array(64 + 32);\n  for (let i = 0; i < 64; i++) { ipad[i] = k[i] ^ 0x36; opad[i] = k[i] ^ 0x5c; }\n  ipad.set(msgBytes, 64);\n  opad.set(sha256(ipad), 64);\n  return sha256(opad);\n}\nconst utf8 = (text) => new TextEncoder().encode(String(text));\nconst toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');\n// ── The Diamond activation code — must match src/lib/activation.ts ─────────\nconst ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';\nfunction activationCode(secret, reference) {\n  const sig = hmacSha256(utf8(secret), utf8(String(reference).trim().toUpperCase()));\n  let bits = 0, value = 0, code = '';\n  for (const byte of sig) {\n    value = (value << 8) | byte; bits += 8;\n    while (bits >= 5 && code.length < 8) { code += ALPHABET[(value >>> (bits - 5)) & 31]; bits -= 5; }\n    if (code.length >= 8) break;\n  }\n  return code.slice(0, 4) + '-' + code.slice(4);\n}\n\n// Works out what PAID / RESEND should do for this reference.\nconst cfg = $('Settings').first().json.cfg;\nconst command = $('Read WhatsApp event').item.json;\nconst row = $input.item.json;\nconst pretty = (p) => '+' + p.slice(0, 2) + ' ' + p.slice(2, 7) + ' ' + p.slice(7);\n\nif (!row.reference) {\n  return { json: { action: 'reply', to: command.from, text: '❓ No request ' + command.ref + ' found. Check the reference on the customer\\'s Membership screen, or send PENDING for the list.' } };\n}\nif (command.cmd === 'RESEND' && row.status !== 'paid') {\n  return { json: { action: 'reply', to: command.from, text: 'ℹ️ ' + row.reference + ' is not marked paid yet. Send PAID ' + row.reference + ' once the payment is in.' } };\n}\nconst code = activationCode(cfg.activationSecret, row.reference);\nconst message = cfg.whatsapp.useTemplates\n  ? {\n      messaging_product: 'whatsapp', to: row.phone, type: 'template',\n      template: {\n        name: cfg.whatsapp.customerCodeTemplate,\n        language: { code: cfg.whatsapp.templateLanguage },\n        components: [{ type: 'body', parameters: [\n          { type: 'text', text: row.name },\n          { type: 'text', text: code },\n          { type: 'text', text: row.reference },\n        ] }],\n      },\n    }\n  : { messaging_product: 'whatsapp', to: row.phone, type: 'text', text: { preview_url: false, body:\n      'Hi ' + row.name + ', your payment is confirmed. Your WRC Diamond activation code is ' + code +\n      ' (request ' + row.reference + '). Open WRC → Profile → Membership and enter it.' } };\n\nreturn { json: {\n  action: 'send',\n  admin: command.from,\n  reference: row.reference,\n  name: row.name,\n  phone: row.phone,\n  phonePretty: pretty(row.phone),\n  code,\n  amount: command.amount || row.amount || '',\n  repeat: row.status === 'paid',\n  message,\n  smsText: 'WRC: Payment confirmed. Your Diamond activation code is ' + code + ' for request ' + row.reference + '. Enter it in WRC > Profile > Membership.',\n} };"
+      },
+      "id": "7a3c0038-3d2e-4f10-9b1a-0c5e8d000038",
+      "name": "Prepare code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7a3c0039-3d2e-4f10-9b1a-0c5e8d000039",
+              "leftValue": "={{ $json.action === 'send' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7a3c0040-3d2e-4f10-9b1a-0c5e8d000040",
+      "name": "Send or explain?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2160,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $input.item.json;\n// A repeat PAID keeps the first payment time.\nreturn { json: { status: 'paid', ...(p.repeat ? {} : { paidAt: new Date().toISOString() }), amount: p.amount, code: p.code } };"
+      },
+      "id": "7a3c0041-3d2e-4f10-9b1a-0c5e8d000041",
+      "name": "Row · paid",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare code').item.json.reference }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7a3c0042-3d2e-4f10-9b1a-0c5e8d000042",
+      "name": "Mark paid",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        720
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.whatsapp.graphBase }}/{{ $('Settings').first().json.cfg.whatsapp.phoneNumberId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Settings').first().json.cfg.whatsapp.accessToken }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Prepare code').item.json.message) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0043-3d2e-4f10-9b1a-0c5e8d000043",
+      "name": "WhatsApp · code to customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2880,
+        720
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { codeVia: 'whatsapp', codeMessageId: String($input.item.json.messages?.[0]?.id ?? '') } };"
+      },
+      "id": "7a3c0044-3d2e-4f10-9b1a-0c5e8d000044",
+      "name": "Row · code on WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.sms.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "={{ $('Settings').first().json.cfg.sms.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ route: 'q', message: $('Prepare code').item.json.smsText, language: 'english', flash: 0, numbers: String($('Prepare code').item.json.phone).slice(-10) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0045-3d2e-4f10-9b1a-0c5e8d000045",
+      "name": "SMS · code to customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3120,
+        900
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { codeVia: $input.item.json.return === false ? 'failed' : 'sms' } };"
+      },
+      "id": "7a3c0046-3d2e-4f10-9b1a-0c5e8d000046",
+      "name": "Row · code by SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { codeVia: 'failed' } };"
+      },
+      "id": "7a3c0047-3d2e-4f10-9b1a-0c5e8d000047",
+      "name": "Row · code not delivered",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare code').item.json.reference }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7a3c0048-3d2e-4f10-9b1a-0c5e8d000048",
+      "name": "Save code result",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3600,
+        720
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Prepare code').item.json;\nconst via = $('Row · code on WhatsApp').isExecuted ? 'whatsapp' : $('Row · code by SMS').isExecuted ? $('Row · code by SMS').item.json.codeVia : 'failed';\nconst how = { whatsapp: 'on WhatsApp', sms: 'by SMS' }[via];\nconst head = how\n  ? '✅ ' + (p.repeat ? 'Code sent again' : 'Payment noted') + ' for ' + p.reference + '. Code sent to ' + p.name + ' (' + p.phonePretty + ') ' + how + '.'\n  : '⚠️ ' + p.reference + ': WhatsApp and SMS both failed. Read the code to ' + p.name + ' on ' + p.phonePretty + '.';\nreturn { json: { to: p.admin, text: head + '\\nCode: ' + p.code + (p.amount ? '\\nAmount: ₹' + p.amount : '') } };"
+      },
+      "id": "7a3c0049-3d2e-4f10-9b1a-0c5e8d000049",
+      "name": "Tell admin · result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { to: $input.item.json.to, text: $input.item.json.text } };"
+      },
+      "id": "7a3c0050-3d2e-4f10-9b1a-0c5e8d000050",
+      "name": "Tell admin · explain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        1080
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "wrc_diamond_requests",
+        "columns": {
+          "column": [
+            {
+              "name": "reference",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "bestTime",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "requestedAt",
+              "type": "string"
+            },
+            {
+              "name": "adminAlert",
+              "type": "string"
+            },
+            {
+              "name": "adminAlertId",
+              "type": "string"
+            },
+            {
+              "name": "paidAt",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "string"
+            },
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "codeVia",
+              "type": "string"
+            },
+            {
+              "name": "codeMessageId",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "7a3c0051-3d2e-4f10-9b1a-0c5e8d000051",
+      "name": "Ensure table (list)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        1296
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "7a3c0052-3d2e-4f10-9b1a-0c5e8d000052",
+      "name": "Open requests",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        1296
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map((i) => i.json).filter((r) => r.reference);\nconst to = $('Read WhatsApp event').first().json.from;\nif (rows.length === 0) return [{ json: { to, text: '📭 No open Diamond requests.' } }];\nrows.sort((a, b) => String(a.requestedAt).localeCompare(String(b.requestedAt)));\nconst pretty = (p) => '+' + p.slice(0, 2) + ' ' + p.slice(2, 7) + ' ' + p.slice(7);\nconst lines = rows.slice(-15).map((r) => '• ' + r.reference + ' — ' + r.name + ', ' + pretty(r.phone) + ' (' + r.bestTime + ')');\nreturn [{ json: { to, text: '📋 Open Diamond requests (' + rows.length + '):\\n' + lines.join('\\n') + '\\n\\nReply PAID <reference> after payment.' } }];"
+      },
+      "id": "7a3c0053-3d2e-4f10-9b1a-0c5e8d000053",
+      "name": "Tell admin · list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { to: $input.item.json.from, text:\n  'WRC Diamond commands:\\n' +\n  '• PAID WRC-DXXXXXX — payment received, send the code\\n' +\n  '• PAID WRC-DXXXXXX 4999 — same, and note the amount\\n' +\n  '• RESEND WRC-DXXXXXX — send the code again\\n' +\n  '• PENDING — list open requests' } };"
+      },
+      "id": "7a3c0054-3d2e-4f10-9b1a-0c5e8d000054",
+      "name": "Tell admin · help",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        1548
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.whatsapp.graphBase }}/{{ $('Settings').first().json.cfg.whatsapp.phoneNumberId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Settings').first().json.cfg.whatsapp.accessToken }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0055-3d2e-4f10-9b1a-0c5e8d000055",
+      "name": "WhatsApp · reply to admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4080,
+        1080
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "wrc_diamond_requests",
+        "columns": {
+          "column": [
+            {
+              "name": "reference",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "bestTime",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "requestedAt",
+              "type": "string"
+            },
+            {
+              "name": "adminAlert",
+              "type": "string"
+            },
+            {
+              "name": "adminAlertId",
+              "type": "string"
+            },
+            {
+              "name": "paidAt",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "string"
+            },
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "codeVia",
+              "type": "string"
+            },
+            {
+              "name": "codeMessageId",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "7a3c0056-3d2e-4f10-9b1a-0c5e8d000056",
+      "name": "Ensure table (failures)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        1800
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "adminAlertId",
+              "condition": "eq",
+              "keyValue": "={{ $('Read WhatsApp event').item.json.messageId }}"
+            },
+            {
+              "keyName": "codeMessageId",
+              "condition": "eq",
+              "keyValue": "={{ $('Read WhatsApp event').item.json.messageId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "7a3c0057-3d2e-4f10-9b1a-0c5e8d000057",
+      "name": "Find failed message",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        1800
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── HMAC-SHA256, in plain JavaScript ────────────────────────────────────────\n// n8n's Code node may not load Node's 'crypto' module (NODE_FUNCTION_ALLOW_BUILTIN),\n// so the two hashes this workflow needs are done by hand. Checked against Node's\n// crypto and against the app's own activation codes.\nfunction sha256(bytes) {\n  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];\n  const len = bytes.length;\n  const total = ((len + 9 + 63) >> 6) << 6;\n  const m = new Uint8Array(total);\n  m.set(bytes); m[len] = 0x80;\n  const bits = len * 8;\n  const view = new DataView(m.buffer);\n  view.setUint32(total - 8, Math.floor(bits / 0x100000000));\n  view.setUint32(total - 4, bits >>> 0);\n  const w = new Uint32Array(64);\n  const r = (x, n) => (x >>> n) | (x << (32 - n));\n  for (let off = 0; off < total; off += 64) {\n    for (let i = 0; i < 16; i++) w[i] = view.getUint32(off + i * 4);\n    for (let i = 16; i < 64; i++) {\n      const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3);\n      const s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);\n      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;\n    }\n    let [a, b, c, d, e, f, g, h] = H;\n    for (let i = 0; i < 64; i++) {\n      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;\n      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;\n      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;\n    }\n    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;\n    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;\n  }\n  const out = new Uint8Array(32);\n  const ov = new DataView(out.buffer);\n  H.forEach((v, i) => ov.setUint32(i * 4, v));\n  return out;\n}\nfunction hmacSha256(keyBytes, msgBytes) {\n  let key = keyBytes.length > 64 ? sha256(keyBytes) : keyBytes;\n  const k = new Uint8Array(64); k.set(key);\n  const ipad = new Uint8Array(64 + msgBytes.length), opad = new Uint8Array(64 + 32);\n  for (let i = 0; i < 64; i++) { ipad[i] = k[i] ^ 0x36; opad[i] = k[i] ^ 0x5c; }\n  ipad.set(msgBytes, 64);\n  opad.set(sha256(ipad), 64);\n  return sha256(opad);\n}\nconst utf8 = (text) => new TextEncoder().encode(String(text));\nconst toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');\n// ── The Diamond activation code — must match src/lib/activation.ts ─────────\nconst ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';\nfunction activationCode(secret, reference) {\n  const sig = hmacSha256(utf8(secret), utf8(String(reference).trim().toUpperCase()));\n  let bits = 0, value = 0, code = '';\n  for (const byte of sig) {\n    value = (value << 8) | byte; bits += 8;\n    while (bits >= 5 && code.length < 8) { code += ALPHABET[(value >>> (bits - 5)) & 31]; bits -= 5; }\n    if (code.length >= 8) break;\n  }\n  return code.slice(0, 4) + '-' + code.slice(4);\n}\nconst cfg = $('Settings').first().json.cfg;\nconst failed = $('Read WhatsApp event').item.json;\nconst row = $input.item.json;\nif (!row.reference) return null;\nconst pretty = (p) => '+' + p.slice(0, 2) + ' ' + p.slice(2, 7) + ' ' + p.slice(7);\nif (row.codeMessageId === failed.messageId && row.codeVia === 'whatsapp') {\n  const code = activationCode(cfg.activationSecret, row.reference);\n  return { json: { kind: 'code', reference: row.reference, to: row.phone, admin: cfg.adminNumbers[0],\n    smsText: 'WRC: Payment confirmed. Your Diamond activation code is ' + code + ' for request ' + row.reference + '. Enter it in WRC > Profile > Membership.',\n    adminText: '↪️ WhatsApp could not reach ' + row.name + ' (' + pretty(row.phone) + '), so their code for ' + row.reference + ' went by SMS.' } };\n}\nif (row.adminAlertId === failed.messageId && row.adminAlert === 'whatsapp') {\n  return { json: { kind: 'alert', reference: row.reference, to: failed.to || cfg.adminNumbers[0],\n    smsText: 'WRC: New Diamond request ' + row.reference + ' from ' + row.name + ', ' + pretty(row.phone) + '. After payment reply on WhatsApp: PAID ' + row.reference } };\n}\nreturn null;"
+      },
+      "id": "7a3c0058-3d2e-4f10-9b1a-0c5e8d000058",
+      "name": "Plan SMS fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        1800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Settings').first().json.cfg.sms.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "={{ $('Settings').first().json.cfg.sms.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ route: 'q', message: $('Plan SMS fallback').item.json.smsText, language: 'english', flash: 0, numbers: String($('Plan SMS fallback').item.json.to).slice(-10) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "7a3c0059-3d2e-4f10-9b1a-0c5e8d000059",
+      "name": "SMS · fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1920,
+        1800
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const plan = $('Plan SMS fallback').item.json;\nconst ok = !$input.item.json.error && $input.item.json.return !== false;\nreturn { json: plan.kind === 'code' ? { codeVia: ok ? 'sms' : 'failed' } : { adminAlert: ok ? 'sms' : 'failed' } };"
+      },
+      "id": "7a3c0060-3d2e-4f10-9b1a-0c5e8d000060",
+      "name": "Row · fallback result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        1800
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "wrc_diamond_requests",
+          "cachedResultName": "wrc_diamond_requests"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "reference",
+              "condition": "eq",
+              "keyValue": "={{ $('Plan SMS fallback').item.json.reference }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7a3c0061-3d2e-4f10-9b1a-0c5e8d000061",
+      "name": "Save fallback result",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        1800
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const plan = $('Plan SMS fallback').item.json;\nif (plan.kind !== 'code') return null;\nreturn { json: { to: plan.admin, text: plan.adminText } };"
+      },
+      "id": "7a3c0062-3d2e-4f10-9b1a-0c5e8d000062",
+      "name": "Tell admin · fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        1800
+      ]
+    }
+  ],
+  "connections": {
+    "App · Diamond request": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp · verify": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp · events": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Check request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Token matches?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply · 200 to Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check request": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Ensure table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply · rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure table": {
+      "main": [
+        [
+          {
+            "node": "Find request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find request": {
+      "main": [
+        [
+          {
+            "node": "New request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New request?": {
+      "main": [
+        [
+          {
+            "node": "Row · new",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply · already have it",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · new": {
+      "main": [
+        [
+          {
+            "node": "Save request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save request": {
+      "main": [
+        [
+          {
+            "node": "Reply · received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply · received": {
+      "main": [
+        [
+          {
+            "node": "Alert messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert messages": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · alert admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp · alert admin": {
+      "main": [
+        [
+          {
+            "node": "Row · alert on WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SMS · alert admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS · alert admin": {
+      "main": [
+        [
+          {
+            "node": "Row · alert by SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Row · alert failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · alert on WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Save alert result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · alert by SMS": {
+      "main": [
+        [
+          {
+            "node": "Save alert result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · alert failed": {
+      "main": [
+        [
+          {
+            "node": "Save alert result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token matches?": {
+      "main": [
+        [
+          {
+            "node": "Reply · challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply · forbidden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply · 200 to Meta": {
+      "main": [
+        [
+          {
+            "node": "Read WhatsApp event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read WhatsApp event": {
+      "main": [
+        [
+          {
+            "node": "Command or failure?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command or failure?": {
+      "main": [
+        [
+          {
+            "node": "Which command?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ensure table (failures)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which command?": {
+      "main": [
+        [
+          {
+            "node": "Ensure table (commands)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ensure table (list)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tell admin · help",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure table (commands)": {
+      "main": [
+        [
+          {
+            "node": "Find request (command)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find request (command)": {
+      "main": [
+        [
+          {
+            "node": "Prepare code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare code": {
+      "main": [
+        [
+          {
+            "node": "Send or explain?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send or explain?": {
+      "main": [
+        [
+          {
+            "node": "Row · paid",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tell admin · explain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · paid": {
+      "main": [
+        [
+          {
+            "node": "Mark paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark paid": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · code to customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp · code to customer": {
+      "main": [
+        [
+          {
+            "node": "Row · code on WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SMS · code to customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS · code to customer": {
+      "main": [
+        [
+          {
+            "node": "Row · code by SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Row · code not delivered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · code on WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Save code result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · code by SMS": {
+      "main": [
+        [
+          {
+            "node": "Save code result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · code not delivered": {
+      "main": [
+        [
+          {
+            "node": "Save code result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save code result": {
+      "main": [
+        [
+          {
+            "node": "Tell admin · result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure table (list)": {
+      "main": [
+        [
+          {
+            "node": "Open requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open requests": {
+      "main": [
+        [
+          {
+            "node": "Tell admin · list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tell admin · result": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · reply to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tell admin · explain": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · reply to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tell admin · list": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · reply to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tell admin · help": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · reply to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure table (failures)": {
+      "main": [
+        [
+          {
+            "node": "Find failed message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find failed message": {
+      "main": [
+        [
+          {
+            "node": "Plan SMS fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan SMS fallback": {
+      "main": [
+        [
+          {
+            "node": "SMS · fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS · fallback": {
+      "main": [
+        [
+          {
+            "node": "Row · fallback result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Row · fallback result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row · fallback result": {
+      "main": [
+        [
+          {
+            "node": "Save fallback result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save fallback result": {
+      "main": [
+        [
+          {
+            "node": "Tell admin · fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tell admin · fallback": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp · reply to admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Kolkata"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

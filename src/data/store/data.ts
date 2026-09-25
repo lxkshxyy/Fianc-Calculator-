@@ -59,6 +59,19 @@ export const useData = create<DataState>()((set, get) => {
     set({ snapshot, status: 'ready', error: null })
   }
 
+  /** Sends whatever is queued, then re-reads so a screen sees `sent` as soon as it is. */
+  function deliver(): void {
+    void deliverQueued().then(async (sent) => {
+      if (sent > 0) await refresh()
+    })
+  }
+
+  /*
+   * A request made on a train is sent when the signal comes back, not only on
+   * the next launch. Registered once, the first time the data loads.
+   */
+  let listeningForOnline = false
+
   async function guarded(action: () => Promise<void>): Promise<void> {
     try {
       await action()
@@ -81,10 +94,12 @@ export const useData = create<DataState>()((set, get) => {
         await refresh()
       })
       /* Anything left queued last time goes now — in the background, and only
-         when there is a server to take it (config/server.ts). */
-      void deliverQueued().then(async (sent) => {
-        if (sent > 0) await refresh()
-      })
+         when there is somewhere to send it (config/server.ts, config/automation.ts). */
+      deliver()
+      if (!listeningForOnline && typeof window !== 'undefined') {
+        listeningForOnline = true
+        window.addEventListener('online', deliver)
+      }
     },
 
     create: async (name, draft) => {
@@ -93,6 +108,8 @@ export const useData = create<DataState>()((set, get) => {
         created = await repo.create(name, draft)
         await refresh()
       })
+      /* A request written to the WRC team (a Diamond upgrade) goes straight away. */
+      if (created !== null && 'delivery' in draft && draft.delivery === 'queued') deliver()
       return created
     },
 
@@ -124,11 +141,7 @@ export const useData = create<DataState>()((set, get) => {
         }
         await refresh()
       })
-      if (created !== null && draft.delivery === 'queued') {
-        void deliverQueued().then(async (sent) => {
-          if (sent > 0) await refresh()
-        })
-      }
+      if (created !== null && draft.delivery === 'queued') deliver()
       return created
     },
 
