@@ -1,12 +1,22 @@
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Paperclip, Trash2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Paperclip,
+  Trash2,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { AppButton } from '@/components/ui/AppButton'
+import { buttonClass } from '@/components/ui/buttonStyles'
 import { Card } from '@/components/ui/Card'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { newId, nowMs } from '@/data/schema'
 import { repo } from '@/data/repo'
+import { teamWhatsAppUrl } from '@/lib/whatsapp'
 import { PublicShell } from './PublicShell'
 
 /**
@@ -316,8 +326,20 @@ export function InsuranceReviewForm() {
   }
 
   if (reference !== null) {
+    const whatsapp = teamWhatsAppUrl(
+      [
+        'Hello WRC team, I have sent an Insurance Review request.',
+        `Reference: ${reference}`,
+        `Name: ${draft.fullName.trim()}`,
+        `Mobile: ${draft.whatsapp.trim()}`,
+        draft.needs.length === 0 ? '' : `Looking for: ${draft.needs.join(', ')}`,
+      ]
+        .filter((line) => line !== '')
+        .join('\n'),
+    )
+
     return (
-      <PublicShell>
+      <PublicShell title="Insurance Review">
         <section className="mx-auto max-w-lg py-16">
           <Card className="text-center">
             <span className="bg-success/15 inline-flex rounded-full p-2.5">
@@ -331,7 +353,22 @@ export function InsuranceReviewForm() {
               {reference}
             </p>
             <p className="text-caption text-text-3 mt-2">Keep this reference for any follow-up.</p>
-            <div className="mt-6">
+            {/*
+             * Until the WRC server exists nothing collects the queued request, so
+             * WhatsApp is the way it reaches the team today (see ServiceRequest).
+             */}
+            {whatsapp === null ? null : (
+              <a
+                href={whatsapp}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClass({ variant: 'primary', block: true }, 'mt-6')}
+              >
+                <MessageCircle aria-hidden className="size-4" />
+                Send it on WhatsApp too
+              </a>
+            )}
+            <div className={whatsapp === null ? 'mt-6' : 'mt-3'}>
               <AppButton
                 block
                 onClick={() => {
@@ -348,7 +385,7 @@ export function InsuranceReviewForm() {
   }
 
   return (
-    <PublicShell>
+    <PublicShell title="Insurance Review">
       <section className="mx-auto max-w-2xl py-10">
         <Link
           to="/request-centre"

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { baseFields, NonNegativeMoney } from './common'
+import { baseFields, NonNegativeMoney, sourceFields } from './common'
 
 export const IncomeKind = z.enum(['salary', 'freelance', 'business', 'rental', 'interest', 'other'])
 export type IncomeKind = z.infer<typeof IncomeKind>
@@ -10,6 +10,7 @@ export type IncomeCadence = z.infer<typeof IncomeCadence>
 
 export const IncomeSource = z.object({
   ...baseFields,
+  ...sourceFields,
   name: z.string().min(1),
   kind: IncomeKind,
   /** Gross amount per occurrence of `cadence`. */

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { baseFields, IsoDate, Money, NonNegativeMoney } from './common'
+import { baseFields, IsoDate, Money, NonNegativeMoney, sourceFields } from './common'
 
 export const InvestmentKind = z.enum([
   'mutual-fund',
@@ -32,6 +32,7 @@ export type Cashflow = z.infer<typeof Cashflow>
 
 export const Investment = z.object({
   ...baseFields,
+  ...sourceFields,
   name: z.string().min(1),
   kind: InvestmentKind,
   units: z.number().finite().nonnegative(),

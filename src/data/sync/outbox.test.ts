@@ -47,6 +47,7 @@ describe('delivering to the WRC server', () => {
       fileId: null,
       scan: null,
       delivery: 'queued',
+      imported: [],
     })
     expect(await deliverQueued()).toBe(0)
     expect(fetchSpy).not.toHaveBeenCalled()
@@ -68,6 +69,7 @@ describe('delivering to the WRC server', () => {
       fileId: 'file_a',
       scan: null,
       delivery: 'queued',
+      imported: [],
     })
     const private_ = await repo.create('documents', {
       name: 'Private',
@@ -79,6 +81,7 @@ describe('delivering to the WRC server', () => {
       fileId: null,
       scan: null,
       delivery: 'local',
+      imported: [],
     })
     await repo.create('requests', {
       reference: 'WRC-DAAAAAA',

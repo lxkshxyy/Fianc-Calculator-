@@ -2,12 +2,18 @@ import { z } from 'zod'
 
 import { baseFields, IsoDate, Timestamp } from './common'
 
+/*
+ * `salary-slip` and `bank-statement` were added after launch. Widening an enum
+ * is safe for stored records — every value saved before still parses.
+ */
 export const DocumentKind = z.enum([
   'insurance-policy',
   'premium-receipt',
+  'salary-slip',
   'tax',
   'investment',
   'loan',
+  'bank-statement',
   'identity',
   'will',
   'other',
@@ -47,6 +53,36 @@ export const DocumentScan = z.object({
 })
 export type DocumentScan = z.infer<typeof DocumentScan>
 
+/** The parts of the app a document can add to (domain/docimport.ts). */
+export const ImportTarget = z.enum([
+  'policies',
+  'incomeSources',
+  'investments',
+  'liabilities',
+  'transactions',
+  'deductions',
+  'taxProfile',
+])
+export type ImportTarget = z.infer<typeof ImportTarget>
+
+/**
+ * One record a document added or changed when it was saved — kept on the
+ * document, so deleting the document can take back exactly what it brought in
+ * (domain/docremove.ts).
+ */
+export const ImportedRecord = z.object({
+  target: ImportTarget,
+  /** The record's id. For `taxProfile`, the household's one profile. */
+  id: z.string(),
+  /** True when the document created the record; false when it changed one already there. */
+  created: z.boolean(),
+  /** The values it wrote, to tell later whether they are still the ones it left. */
+  wrote: z.record(z.string(), z.unknown()),
+  /** For a change: the same fields as they were before, to put back. */
+  before: z.record(z.string(), z.unknown()).nullable(),
+})
+export type ImportedRecord = z.infer<typeof ImportedRecord>
+
 export const DocumentRecord = z.object({
   ...baseFields,
   name: z.string().min(1),
@@ -64,6 +100,8 @@ export const DocumentRecord = z.object({
   fileId: z.string().nullable().default(null),
   scan: DocumentScan.nullable().default(null),
   delivery: Delivery.default('local'),
+  /** What saving it added to the rest of the app. Empty for documents saved before this existed. */
+  imported: z.array(ImportedRecord).default([]),
 })
 export type DocumentRecord = z.infer<typeof DocumentRecord>
 

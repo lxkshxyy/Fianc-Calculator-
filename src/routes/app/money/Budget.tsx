@@ -1,15 +1,54 @@
-import { AlertTriangle, RefreshCw, Wallet } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
+import {
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ArrowUpRight,
+  type LucideIcon,
+  ReceiptText,
+  RefreshCw,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react'
 
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { Meter, RecordList } from '@/components/ui/RecordList'
-import { monthKey, todayIso } from '@/data/schema'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { monthKey, todayIso, type TransactionKind } from '@/data/schema'
+import { useData, useDerived, useSnapshot, useSourceName } from '@/data/store/data'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
+
+const KIND_ICON: Record<TransactionKind, LucideIcon> = {
+  income: ArrowDownLeft,
+  expense: ArrowUpRight,
+  investment: TrendingUp,
+  transfer: ArrowLeftRight,
+}
+
+const KIND_LABEL: Record<TransactionKind, string> = {
+  income: 'Money in',
+  expense: 'Spent',
+  investment: 'Invested',
+  transfer: 'Transfer',
+}
+
+/** A month's list can be long; past this many rows it stops being readable. */
+const MAX_ROWS = 100
+
+/** "2026-09-07" → "7 Sep". Falls back to the raw value rather than throwing. */
+function shortDate(iso: string): string {
+  try {
+    return format(parseISO(iso), 'd MMM')
+  } catch {
+    return iso
+  }
+}
 
 export function Budget() {
   const snapshot = useSnapshot()
   const derived = useDerived()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   if (snapshot === null || derived === null) return null
 
   const thisMonth = monthKey(todayIso())
@@ -47,6 +86,18 @@ export function Budget() {
   }
 
   const overspent = rows.filter((row) => row.subtitle !== undefined).length
+
+  /*
+   * Every line of the month, newest first — what a statement read on Documents
+   * brought in, and what was added by hand. Without it an imported statement
+   * showed only as a total and its recurring lines, with no way to check a
+   * single row against the paper.
+   */
+  const categoryName = new Map(snapshot.categories.map((category) => [category.id, category.name]))
+  const monthLines = snapshot.transactions
+    .filter((txn) => monthKey(txn.date) === thisMonth)
+    .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : b.date.localeCompare(a.date)))
+  const shownLines = monthLines.slice(0, MAX_ROWS)
 
   return (
     <ModuleScreen
@@ -105,6 +156,47 @@ export function Budget() {
             title: 'Nothing recurring yet',
             description:
               'Rent, subscriptions and utilities are marked automatically as you add them.',
+          }}
+        />
+      </ModuleSection>
+
+      <ModuleSection
+        label={
+          monthLines.length > shownLines.length
+            ? `This month's transactions · latest ${String(MAX_ROWS)} of ${String(monthLines.length)}`
+            : `This month's transactions · ${String(monthLines.length)}`
+        }
+      >
+        <RecordList
+          rows={shownLines.map((txn) => {
+            const category = txn.categoryId === null ? undefined : categoryName.get(txn.categoryId)
+            return {
+              id: txn.id,
+              icon: KIND_ICON[txn.kind],
+              title: txn.note.length > 0 ? txn.note : KIND_LABEL[txn.kind],
+              subtitle: [shortDate(txn.date), KIND_LABEL[txn.kind], category]
+                .filter((part) => part !== undefined)
+                .join(' · '),
+              /* Money in reads as a plain figure, money out as a negative one. */
+              value: (
+                <CurrencyText
+                  value={txn.kind === 'income' ? txn.amount : -txn.amount}
+                  variant="full"
+                  size="body"
+                />
+              ),
+              deleteLabel: txn.note.length > 0 ? txn.note : KIND_LABEL[txn.kind],
+              source: sourceName(txn),
+            }
+          })}
+          onDelete={(id) => {
+            void removeRecord('transactions', id)
+          }}
+          empty={{
+            icon: ReceiptText,
+            title: 'Nothing this month yet',
+            description:
+              'Upload a bank statement on Documents, or add spending from the dashboard, and each line shows here.',
           }}
         />
       </ModuleSection>

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { baseFields, NonNegativeMoney } from './common'
+import { baseFields, NonNegativeMoney, sourceFields } from './common'
 
 /**
  * §9.4 — slabs, rates, standard deduction, rebate and cess live in a DATED
@@ -45,6 +45,7 @@ export type DeductionSection = z.infer<typeof DeductionSection>
 
 export const DeductionEntry = z.object({
   ...baseFields,
+  ...sourceFields,
   section: DeductionSection,
   label: z.string().min(1),
   amount: NonNegativeMoney,

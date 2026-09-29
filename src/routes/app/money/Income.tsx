@@ -5,7 +5,7 @@ import { INCOME_CONSTANTS, INCOME_FIELDS, IncomeDraft } from '../addForms'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { RecordList } from '@/components/ui/RecordList'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { useData, useDerived, useSnapshot, useSourceName } from '@/data/store/data'
 import { useT } from '@/i18n'
 import type { TranslationKey } from '@/i18n/en'
 import { monthlyValue, type IncomeCadence } from '@/data/schema'
@@ -26,6 +26,8 @@ const CADENCE_LABEL: Record<IncomeCadence, TranslationKey> = {
 export function Income() {
   const t = useT()
   const snapshot = useSnapshot()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   const derived = useDerived()
   if (snapshot === null || derived === null) return null
 
@@ -83,7 +85,12 @@ export function Income() {
                   <CurrencyText value={monthlyValue(source)} size="body" tone="inherit" /> / month
                 </>
               ),
+            deleteLabel: source.name,
+            source: sourceName(source),
           }))}
+          onDelete={(id) => {
+            void removeRecord('incomeSources', id)
+          }}
           empty={{
             icon: Banknote,
             title: t('income.emptyTitle'),

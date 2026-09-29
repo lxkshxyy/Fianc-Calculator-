@@ -9,7 +9,7 @@ import { MetricTile } from '@/components/ui/MetricTile'
 import { NumberField } from '@/components/ui/NumberField'
 import { RecordList } from '@/components/ui/RecordList'
 import { SectionLabel } from '@/components/ui/SectionLabel'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { useData, useDerived, useSnapshot, useSourceName } from '@/data/store/data'
 import { useT } from '@/i18n'
 import { prepaymentSaving, remainingInterest } from '@/domain/loan'
 import { EM_DASH, formatPercent } from '@/lib/money'
@@ -18,6 +18,8 @@ import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 export function EmiCredit() {
   const t = useT()
   const snapshot = useSnapshot()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   const derived = useDerived()
   const [loanId, setLoanId] = useState<string | null>(null)
   const [prepayText, setPrepayText] = useState('')
@@ -108,8 +110,14 @@ export function EmiCredit() {
                     {t('emi.interestToCome')}
                   </>
                 ),
+              deleteLabel: loan.name,
+              source: sourceName(loan),
             }
           })}
+          onDelete={(id) => {
+            if (loanId === id) setLoanId(null)
+            void removeRecord('liabilities', id)
+          }}
           empty={{
             icon: CreditCard,
             title: t('emi.emptyTitle'),

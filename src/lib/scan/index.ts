@@ -1,5 +1,6 @@
+import { ReaderLoadError } from './errors'
 import { imageToCanvas } from './image'
-import { isOcrSupported, recognise } from './ocr'
+import { isOcrSupported, openRecogniser, recognise } from './ocr'
 import { openPdf, pdfText, PdfPasswordError, renderPage } from './pdf'
 
 /**
@@ -27,10 +28,19 @@ export type ScanProgress = {
 export type ScanOutcome =
   | { status: 'done'; method: 'pdf-text' | 'ocr'; text: string }
   | { status: 'needs-password'; wrongPassword: boolean }
-  | { status: 'failed'; reason: string }
+  /**
+   * `retry` is true when the file was never really tried — the reader itself
+   * did not load (no connection, or the website's server stopped) — so trying
+   * again can work. False means the file itself could not be read.
+   */
+  | { status: 'failed'; reason: string; retry: boolean }
 
-/** Pages of a scanned (image-only) PDF worth running OCR over. */
-const MAX_OCR_PAGES = 3
+/**
+ * Pages of a scanned (image-only) PDF run through OCR. Each takes a few
+ * seconds on a phone, and the sheet shows "Page 2 of 6" as it goes, so a whole
+ * scanned statement is read rather than only its first pages.
+ */
+export const MAX_OCR_PAGES = 10
 /** Enough resolution for small print without making a phone wait a minute. */
 const OCR_SIDE = 2000
 /** Below this much text, a PDF is treated as pictures of pages. */
@@ -75,15 +85,21 @@ export async function scanFile(
 
         const pages = Math.min(pdf.numPages, MAX_OCR_PAGES)
         const parts: string[] = []
-        for (let number = 1; number <= pages; number += 1) {
-          const detail = pages > 1 ? `Page ${String(number)} of ${String(pages)}` : undefined
-          report({ stage: 'recognising', progress: (number - 1) / pages, detail })
-          const canvas = await renderPage(pdf, number, OCR_SIDE)
-          parts.push(
-            await recognise(canvas, (fraction) => {
-              report({ stage: 'recognising', progress: (number - 1 + fraction) / pages, detail })
-            }),
-          )
+        report({ stage: 'recognising', progress: 0 })
+        const recogniser = await openRecogniser()
+        try {
+          for (let number = 1; number <= pages; number += 1) {
+            const detail = pages > 1 ? `Page ${String(number)} of ${String(pages)}` : undefined
+            report({ stage: 'recognising', progress: (number - 1) / pages, detail })
+            const canvas = await renderPage(pdf, number, OCR_SIDE)
+            parts.push(
+              await recogniser.read(canvas, (fraction) => {
+                report({ stage: 'recognising', progress: (number - 1 + fraction) / pages, detail })
+              }),
+            )
+          }
+        } finally {
+          await recogniser.close()
         }
         return { status: 'done', method: 'ocr', text: parts.join('\n') }
       } finally {
@@ -102,7 +118,11 @@ export async function scanFile(
       return { status: 'done', method: 'ocr', text }
     }
 
-    return { status: 'failed', reason: 'Only PDFs and photos (JPG, PNG, WebP) can be read.' }
+    return {
+      status: 'failed',
+      reason: 'Only PDFs and photos (JPG, PNG, WebP) can be read.',
+      retry: false,
+    }
   } catch (error) {
     if (error instanceof PdfPasswordError) {
       return { status: 'needs-password', wrongPassword: error.wrongPassword }
@@ -110,15 +130,43 @@ export async function scanFile(
     console.warn('Document scan failed.', error)
     return {
       status: 'failed',
-      reason: 'This file could not be read. You can still save it and add the details yourself.',
+      ...(isLoadFailure(error)
+        ? {
+            reason:
+              'The document reader did not load. Check your internet connection and try again.',
+            retry: true,
+          }
+        : {
+            reason: 'This file could not be opened. It may be damaged — try saving it again.',
+            retry: false,
+          }),
     }
   }
+}
+
+/**
+ * A part of the reader (pdf.js, the OCR engine or its language data) that could
+ * not be fetched. On the website that means no connection, or — on a computer
+ * running the site locally — its server stopped; the app itself is still open
+ * from the offline copy. Worded by each browser differently.
+ */
+export function isLoadFailure(error: unknown): boolean {
+  if (error instanceof ReaderLoadError) return true
+  /* A worker whose script could not be fetched rejects with its error event, not an Error. */
+  if (typeof Event !== 'undefined' && error instanceof Event) return true
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
+  const text = error instanceof Error ? `${error.name} ${error.message}` : String(error)
+  return /dynamically imported module|importing a module script failed|failed to fetch|networkerror|load failed|network request failed|chunkloaderror|error loading dynamically|failed to load|importscripts/i.test(
+    text,
+  )
 }
 
 function unsupported(): ScanOutcome {
   return {
     status: 'failed',
-    reason: 'Reading documents is not supported on this phone. You can still save the file.',
+    reason:
+      'This phone cannot read photos of documents. Upload the PDF instead, or use the website.',
+    retry: false,
   }
 }
 

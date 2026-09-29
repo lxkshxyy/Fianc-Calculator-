@@ -40,24 +40,25 @@ export function ModuleScreen({
   return (
     <div className="space-y-6 pb-4">
       {/*
-       * On a phone the sticky app header already carries the screen's title, so
-       * repeating it here in 34px type read as "Settings / Settings", and once
-       * the page scrolled a little the subtitle was left hanging, indented by an
-       * icon that had gone under the header. Below lg the title is left to the
-       * app header and the icon sits beside the subtitle instead.
+       * The sticky app header already carries the screen's title, so repeating
+       * it here in 34px type read as "Goals / Goals". That was fixed on phones
+       * first; on a laptop the two sat one above the other just the same. The
+       * title is now left to the app header at every width, and the icon sits
+       * beside the subtitle. The heading stays in the markup, hidden, so the
+       * screen's structure is unchanged for anything reading it.
        */}
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3 lg:items-start">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           {Icon === undefined ? null : (
-            <span className="rounded-tile bg-surface-2 shrink-0 p-2 lg:mt-1">
+            <span className="rounded-tile bg-surface-2 shrink-0 p-2">
               <Icon aria-hidden className="text-gold size-5" />
             </span>
           )}
           <div className="min-w-0">
-            <h1 className="text-page text-text hidden font-semibold tracking-tight text-balance lg:block">
+            <h1 className="text-page text-text hidden font-semibold tracking-tight text-balance">
               {title}
             </h1>
-            <p className="text-text-2 max-w-prose text-sm lg:mt-1">{subtitle}</p>
+            <p className="text-text-2 max-w-prose text-sm">{subtitle}</p>
           </div>
         </div>
         {action}

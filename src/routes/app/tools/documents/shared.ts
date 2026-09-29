@@ -1,16 +1,23 @@
 import { format, parseISO } from 'date-fns'
 import {
   BadgeCheck,
+  Banknote,
+  Building2,
+  CreditCard,
   FileText,
   Landmark,
   type LucideIcon,
   Receipt,
   ScrollText,
+  Shield,
   ShieldCheck,
   TrendingUp,
+  Wallet,
 } from 'lucide-react'
 
+import { APP_BASE } from '@/app/nav/navigation'
 import type { DocumentKind, ScanField } from '@/data/schema'
+import type { ImportSection } from '@/domain/docimport'
 
 /** What the name/type/tags/details editor edits — the same shape on upload and later. */
 export type DocumentDraft = {
@@ -24,9 +31,11 @@ export type DocumentDraft = {
 export const KIND_LABEL: Record<DocumentKind, string> = {
   'insurance-policy': 'Insurance policy',
   'premium-receipt': 'Premium receipt',
+  'salary-slip': 'Salary slip',
   tax: 'Tax document',
   investment: 'Investment statement',
   loan: 'Loan document',
+  'bank-statement': 'Bank statement',
   identity: 'ID proof',
   will: 'Will',
   other: 'Other',
@@ -35,12 +44,24 @@ export const KIND_LABEL: Record<DocumentKind, string> = {
 export const KIND_ICON: Record<DocumentKind, LucideIcon> = {
   'insurance-policy': ShieldCheck,
   'premium-receipt': Receipt,
+  'salary-slip': Banknote,
   tax: Landmark,
   investment: TrendingUp,
   loan: ScrollText,
+  'bank-statement': Building2,
   identity: BadgeCheck,
   will: ScrollText,
   other: FileText,
+}
+
+/** Where each kind of imported record lives, named and drawn as the menu has it. */
+export const SECTION: Record<ImportSection, { label: string; path: string; icon: LucideIcon }> = {
+  insurance: { label: 'Insurance', path: `${APP_BASE}/insurance`, icon: Shield },
+  income: { label: 'Income', path: `${APP_BASE}/income`, icon: Banknote },
+  investments: { label: 'Investments', path: `${APP_BASE}/investments`, icon: TrendingUp },
+  loans: { label: 'EMI & Credit', path: `${APP_BASE}/emi-credit`, icon: CreditCard },
+  tax: { label: 'Tax Planning', path: `${APP_BASE}/tax`, icon: Receipt },
+  budget: { label: 'Budget', path: `${APP_BASE}/budget`, icon: Wallet },
 }
 
 export const KIND_OPTIONS = (Object.keys(KIND_LABEL) as DocumentKind[]).map((value) => ({

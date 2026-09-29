@@ -1,4 +1,4 @@
-import { Trash2, type LucideIcon } from 'lucide-react'
+import { FileText, Trash2, type LucideIcon } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -36,6 +36,17 @@ export type RecordRow = {
    * which tells a screen-reader user nothing about which one they are on.
    */
   deleteLabel?: string
+  /**
+   * Said under "Remove this?" when deleting the row takes more with it — a
+   * document's delete also removes what it added to the rest of the app.
+   */
+  deleteNote?: string
+  /**
+   * The document this record was read from, by name. Shown as a small "From …"
+   * line, so it is plain which records a document brought in — and will take
+   * with it when it is deleted — and which were typed in by hand.
+   */
+  source?: string
 }
 
 export function RecordList({
@@ -93,6 +104,14 @@ export function RecordList({
                 {row.subtitle === undefined ? null : (
                   <div className="text-caption text-text-2 truncate">{row.subtitle}</div>
                 )}
+                {row.source === undefined ? null : (
+                  <div className="text-caption text-text-3 mt-0.5 flex min-w-0 items-center gap-1">
+                    <FileText aria-hidden className="size-3 shrink-0" />
+                    <span className="truncate">
+                      {t('record.fromDocument', { name: row.source })}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="shrink-0 text-right">
                 {row.value}
@@ -146,7 +165,12 @@ export function RecordList({
 
             {onDelete === undefined || !open ? null : (
               <div className="bg-surface-2 border-border flex flex-wrap items-center justify-end gap-2 border-t px-4 py-2.5">
-                <p className="text-caption text-text-2 mr-auto">{t('record.confirmDelete')}</p>
+                <div className="mr-auto min-w-0">
+                  <p className="text-caption text-text-2">{t('record.confirmDelete')}</p>
+                  {row.deleteNote === undefined ? null : (
+                    <p className="text-caption text-text mt-0.5 font-medium">{row.deleteNote}</p>
+                  )}
+                </div>
                 <div className="flex shrink-0 gap-2">
                   <button
                     type="button"

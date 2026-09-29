@@ -1,10 +1,19 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 
+import type { ImportAction } from '../../domain/docimport'
+import { planRemoval, planSweep, type RemovalStep } from '../../domain/docremove'
 import { derive, type Derived } from '../../domain/derive'
 import { repo } from '../repo'
 import type { CollectionName, Collections, Draft, Patch, Snapshot } from '../repo/types'
-import { newId, type DocumentRecord, type Profile, type TaxProfile } from '../schema'
+import {
+  ImportTarget,
+  newId,
+  type DocumentRecord,
+  type ImportedRecord,
+  type Profile,
+  type TaxProfile,
+} from '../schema'
 import { deliverQueued } from '../sync/outbox'
 
 /**
@@ -40,12 +49,62 @@ type DataState = {
     file: Blob,
     draft: Omit<Draft<DocumentRecord>, 'fileId'>,
   ) => Promise<DocumentRecord | null>
-  /** The record and its file, together — never one left behind without the other. */
+  /**
+   * The record and its file, together — never one left behind without the
+   * other — and whatever the document brought into the rest of the app
+   * (domain/docremove.ts decides what that means record by record).
+   */
   removeDocument: (id: string) => Promise<void>
+  /**
+   * Writes what a scanned document adds to the app (domain/docimport.ts), and
+   * records on that document what it wrote — and, for a change, what was there
+   * before — so deleting the document can take it back (domain/docremove.ts).
+   * Each record is checked on its own: one that fails is skipped and the rest
+   * still land, and the app never drops into its error state over an imported
+   * figure. Resolves to how many were written.
+   */
+  applyImport: (documentId: string, actions: ImportAction[]) => Promise<number>
   saveProfile: (patch: Partial<Profile>) => Promise<void>
   saveTaxProfile: (patch: Partial<TaxProfile>) => Promise<void>
   resetToDemo: () => Promise<void>
   clearEverything: () => Promise<void>
+}
+
+function isImportTarget(name: string): name is ImportTarget {
+  return ImportTarget.safeParse(name).success
+}
+
+/** The named fields of a record, for putting them back later. */
+function pick(record: object, keys: string[]): Record<string, unknown> {
+  const source = record as Record<string, unknown>
+  return Object.fromEntries(keys.filter((key) => key in source).map((key) => [key, source[key]]))
+}
+
+/**
+ * Carries out what domain/docremove.ts planned. Each step stands alone: one
+ * that fails is logged and the rest still happen — and a record it missed
+ * still carries its document's mark, so the next sweep finds it.
+ */
+async function carryOut(steps: RemovalStep[], documents: DocumentRecord[]): Promise<void> {
+  for (const step of steps) {
+    try {
+      if (step.op === 'remove') await repo.remove(step.collection, step.id)
+      else if (step.op === 'restore') await repo.update(step.collection, step.id, step.patch)
+      else if (step.op === 'restore-tax-profile') await repo.saveTaxProfile(step.patch)
+      else {
+        const heir = documents.find((entry) => entry.id === step.documentId)
+        if (heir === undefined) continue
+        await repo.update(step.collection, step.id, { fromDocument: heir.id })
+        await repo.update('documents', heir.id, {
+          imported: heir.imported.map((entry, index) =>
+            index === step.index ? { ...entry, created: true } : entry,
+          ),
+        })
+      }
+    } catch (error) {
+      console.warn('A record brought in by a document could not be taken back.', error)
+    }
+  }
 }
 
 function message(error: unknown): string {
@@ -92,6 +151,13 @@ export const useData = create<DataState>()((set, get) => {
       await guarded(async () => {
         await repo.ready()
         await refresh()
+        /* Data whose document is already gone goes too (domain/docremove.ts). */
+        const snapshot = get().snapshot
+        const orphans = snapshot === null ? [] : planSweep(snapshot)
+        if (snapshot !== null && orphans.length > 0) {
+          await carryOut(orphans, snapshot.documents)
+          await refresh()
+        }
       })
       /* Anything left queued last time goes now — in the background, and only
          when there is somewhere to send it (config/server.ts, config/automation.ts). */
@@ -147,11 +213,69 @@ export const useData = create<DataState>()((set, get) => {
 
     removeDocument: async (id) => {
       await guarded(async () => {
-        const record = get().snapshot?.documents.find((entry) => entry.id === id)
+        const snapshot = get().snapshot
+        const record = snapshot?.documents.find((entry) => entry.id === id)
+        /* What it brought in goes first, while the document still says what that was. */
+        if (snapshot !== null) await carryOut(planRemoval(id, snapshot).steps, snapshot.documents)
         await repo.remove('documents', id)
         if (record !== undefined && record.fileId !== null) await repo.removeFile(record.fileId)
         await refresh()
       })
+    },
+
+    applyImport: async (documentId, actions) => {
+      const imported: ImportedRecord[] = []
+      await guarded(async () => {
+        const before = get().snapshot
+        for (const action of actions) {
+          try {
+            if (action.op === 'create') {
+              /* Marked with its document, so it goes when the document does — and only then. */
+              const created = await repo.create(action.collection, {
+                ...action.draft,
+                fromDocument: documentId,
+              })
+              if (isImportTarget(action.collection)) {
+                imported.push({
+                  target: action.collection,
+                  id: created.id,
+                  created: true,
+                  wrote: {},
+                  before: null,
+                })
+              }
+            } else if (action.op === 'update') {
+              const rows = before?.[action.collection] as Record<string, unknown>[] | undefined
+              const was = rows?.find((row) => row['id'] === action.id)
+              await repo.update(action.collection, action.id, action.patch)
+              if (isImportTarget(action.collection)) {
+                imported.push({
+                  target: action.collection,
+                  id: action.id,
+                  created: false,
+                  wrote: { ...action.patch },
+                  before: was === undefined ? null : pick(was, Object.keys(action.patch)),
+                })
+              }
+            } else {
+              const was = before?.taxProfile
+              await repo.saveTaxProfile(action.patch)
+              imported.push({
+                target: 'taxProfile',
+                id: 'taxProfile',
+                created: false,
+                wrote: { ...action.patch },
+                before: was === undefined ? null : pick(was, Object.keys(action.patch)),
+              })
+            }
+          } catch (error) {
+            console.warn('A record read from a document was not saved.', error)
+          }
+        }
+        if (imported.length > 0) await repo.update('documents', documentId, { imported })
+        await refresh()
+      })
+      return imported.length
     },
 
     saveProfile: async (patch) => {
@@ -210,6 +334,19 @@ export async function readDocumentFile(fileId: string): Promise<Blob | null> {
     console.warn('Could not read a stored document.', error)
     return null
   }
+}
+
+/**
+ * The name of the document a record was read from, or undefined for one typed
+ * in by hand — for the "From …" line on a record's row.
+ */
+export function useSourceName(): (record: { fromDocument?: string }) => string | undefined {
+  const documents = useData((state) => state.snapshot?.documents)
+  return useMemo(() => {
+    const names = new Map((documents ?? []).map((entry) => [entry.id, entry.name]))
+    return (record) =>
+      record.fromDocument === undefined ? undefined : names.get(record.fromDocument)
+  }, [documents])
 }
 
 /** The profile record. Authoritative for display name and tier (§8.1). */

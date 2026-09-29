@@ -37,6 +37,21 @@ export function stampShell(): void {
   document.documentElement.dataset.shell = isNativeApp() ? 'native' : 'web'
 }
 
+/**
+ * True in the phone app, false on the website.
+ *
+ * Read from the stamp rather than from Capacitor so it answers the same way CSS
+ * does, and so a test — or anyone checking a screen in a desktop browser — can
+ * flip it with `document.documentElement.dataset.shell = 'native'`.
+ *
+ * The sign-in screens are where this matters: the app opens on the painted
+ * welcome board and phone-sized forms, while the website already has a landing
+ * page and shows its sign-in inside the site's own header and footer.
+ */
+export function isAppShell(): boolean {
+  return document.documentElement.dataset.shell === 'native'
+}
+
 /** Dark and light base surfaces, mirrored from `--bg` in tokens.css. */
 const BACKGROUND = { dark: '#0a0b0c', light: '#f6f7f8' } as const
 

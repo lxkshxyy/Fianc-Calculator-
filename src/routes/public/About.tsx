@@ -5,7 +5,7 @@ import { PublicShell } from './PublicShell'
 
 export function About() {
   return (
-    <PublicShell>
+    <PublicShell title="About">
       <section className="py-12">
         <h1 className="text-text text-[clamp(1.75rem,5vw,2.5rem)] font-semibold tracking-tight text-balance">
           Why this exists

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { baseFields, IsoDate, Money } from './common'
+import { baseFields, IsoDate, Money, sourceFields } from './common'
 
 export const TransactionKind = z.enum(['income', 'expense', 'investment', 'transfer'])
 export type TransactionKind = z.infer<typeof TransactionKind>
@@ -11,6 +11,7 @@ export type TransactionKind = z.infer<typeof TransactionKind>
  */
 export const Transaction = z.object({
   ...baseFields,
+  ...sourceFields,
   date: IsoDate,
   kind: TransactionKind,
   amount: Money.nonnegative(),

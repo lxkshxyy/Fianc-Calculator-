@@ -1,11 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { routes } from '@/app/router'
 import { useData } from '@/data/store/data'
 import { useSession } from '@/data/store/session'
+import { DEMO_EMAIL, DEMO_NAME } from '@/data/seed/showcase'
 import { createPasscode } from '@/lib/passcode'
 
 /**
@@ -26,9 +27,15 @@ async function renderAuth(path = '/auth'): Promise<void> {
   })
 }
 
-describe('the welcome screen', () => {
+describe('the welcome screen (the phone app)', () => {
   beforeEach(() => {
     useSession.setState({ signedIn: false, account: null, remember: true })
+    /* The board is the app's; the website opens on the log-in form instead. */
+    document.documentElement.dataset.shell = 'native'
+  })
+
+  afterEach(() => {
+    delete document.documentElement.dataset.shell
   })
 
   it('is what a new install and a sign-out both land on', async () => {
@@ -257,6 +264,95 @@ describe('log in', () => {
       },
       { timeout: 5000 },
     )
+    expect(useSession.getState().signedIn).toBe(true)
+  })
+})
+
+describe('on the website', () => {
+  beforeEach(() => {
+    useSession.setState({ signedIn: false, account: null, remember: true })
+    delete document.documentElement.dataset.shell
+  })
+
+  it('opens the log-in form rather than the phone welcome board', async () => {
+    await renderAuth('/auth')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/welcome back/i)
+    expect(document.body.textContent).not.toMatch(/build today, secure tomorrow\.$/i)
+  })
+
+  it('keeps the site header around the form', async () => {
+    await renderAuth('/auth?mode=login')
+    const main = screen.getByRole('navigation', { name: 'Main' })
+    for (const name of ['Features', 'Stages', 'Pricing']) {
+      expect(within(main).getByRole('link', { name })).toBeInTheDocument()
+    }
+  })
+
+  it('offers the demo beside both forms', async () => {
+    for (const path of ['/auth?mode=login', '/auth?mode=signup']) {
+      const router = createMemoryRouter(routes, { initialEntries: [path] })
+      const view = render(<RouterProvider router={router} />)
+      expect(await screen.findByRole('button', { name: /explore the demo/i })).toBeInTheDocument()
+      view.unmount()
+    }
+  })
+
+  it('opens the demo household signed in, without asking when nothing is here', async () => {
+    const user = userEvent.setup()
+    useData.setState({ status: 'idle', snapshot: null, error: null })
+    await useData.getState().clearEverything()
+
+    const router = createMemoryRouter(routes, { initialEntries: ['/auth?mode=login'] })
+    render(<RouterProvider router={router} />)
+    await user.click(await screen.findByRole('button', { name: /explore the demo/i }))
+
+    await waitFor(
+      () => {
+        expect(useSession.getState().signedIn).toBe(true)
+      },
+      { timeout: 5000 },
+    )
+    expect(useSession.getState().account?.email).toBe(DEMO_EMAIL)
+    expect(useData.getState().snapshot?.profile.displayName).toBe(DEMO_NAME)
+    expect(useData.getState().snapshot?.goals.length ?? 0).toBeGreaterThanOrEqual(3)
+  })
+
+  it('asks before the demo replaces a real account', async () => {
+    const user = userEvent.setup()
+    useSession.setState({
+      signedIn: false,
+      account: {
+        displayName: 'Asha',
+        email: 'asha@example.com',
+        createdAt: '2026-01-01',
+        passcode: null,
+      },
+    })
+
+    await renderAuth('/auth?mode=login')
+    await user.click(screen.getByRole('button', { name: /explore the demo/i }))
+
+    expect(screen.getByText(/already has asha’s account/i)).toBeInTheDocument()
+    expect(useSession.getState().account?.email).toBe('asha@example.com')
+
+    await user.click(screen.getByRole('button', { name: /keep my account/i }))
+    expect(useSession.getState().account?.email).toBe('asha@example.com')
+  })
+
+  it('lets a returning visitor back into the demo with one button', async () => {
+    const user = userEvent.setup()
+    useSession.setState({
+      signedIn: false,
+      account: {
+        displayName: DEMO_NAME,
+        email: DEMO_EMAIL,
+        createdAt: '2026-01-01',
+        passcode: null,
+      },
+    })
+
+    await renderAuth('/auth?mode=login')
+    await user.click(screen.getByRole('button', { name: /^continue the demo/i }))
     expect(useSession.getState().signedIn).toBe(true)
   })
 })

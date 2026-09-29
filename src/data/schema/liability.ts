@@ -1,12 +1,13 @@
 import { z } from 'zod'
 
-import { baseFields, IsoDate, NonNegativeMoney, RatePercent } from './common'
+import { baseFields, IsoDate, NonNegativeMoney, RatePercent, sourceFields } from './common'
 
 export const LoanKind = z.enum(['home', 'car', 'personal', 'education', 'credit-card', 'other'])
 export type LoanKind = z.infer<typeof LoanKind>
 
 export const Liability = z.object({
   ...baseFields,
+  ...sourceFields,
   name: z.string().min(1),
   kind: LoanKind,
   principal: NonNegativeMoney,

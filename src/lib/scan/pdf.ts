@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 
+import { ReaderLoadError } from './errors'
 import { toCanvas } from './image'
 
 /**
@@ -13,8 +14,12 @@ import { toCanvas } from './image'
  * not only on the newest Chrome.
  */
 
-/** Most statements put what matters on the first pages; past this is slow for little. */
-export const MAX_TEXT_PAGES = 8
+/**
+ * A digital PDF's text comes out in milliseconds a page, so the whole document
+ * is read — a bank statement's last transactions are on its last page. The cap
+ * only guards against a 500-page annual report picked by mistake.
+ */
+export const MAX_TEXT_PAGES = 50
 
 export class PdfPasswordError extends Error {
   constructor(readonly wrongPassword: boolean) {
@@ -23,12 +28,16 @@ export class PdfPasswordError extends Error {
 }
 
 async function pdfjs() {
-  const [library, worker] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
-  ])
-  library.GlobalWorkerOptions.workerSrc = worker.default
-  return library
+  try {
+    const [library, worker] = await Promise.all([
+      import('pdfjs-dist/legacy/build/pdf.mjs'),
+      import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
+    ])
+    library.GlobalWorkerOptions.workerSrc = worker.default
+    return library
+  } catch (error) {
+    throw new ReaderLoadError('PDF reader', error)
+  }
 }
 
 /** An open PDF, and the way to let go of it (its worker and its memory). */

@@ -12,6 +12,7 @@ import { useRef, useState } from 'react'
 import { AppButton } from '@/components/ui/AppButton'
 import { RecordList } from '@/components/ui/RecordList'
 import { useData, useSnapshot } from '@/data/store/data'
+import { describeRemoval, planRemoval } from '@/domain/docremove'
 import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES } from '@/lib/scan'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 import { DocumentSheet } from './documents/DocumentSheet'
@@ -106,9 +107,10 @@ export function Documents() {
           <ScanText aria-hidden className="size-6" />
         </span>
         <h2 className="text-body text-text mt-3 font-semibold">Add a document</h2>
-        <p className="text-meta text-text-2 mx-auto mt-1 max-w-sm">
-          Photograph a paper, or pick a PDF. It is read on your phone and the policy number, amounts
-          and dates are filled in for you.
+        <p className="text-meta text-text-2 mx-auto mt-1 max-w-md">
+          Photograph a paper, or pick a PDF — a policy, a statement, a salary slip, Form 16 or a
+          loan letter. Every page is read on your device, and what it says is added to Insurance,
+          Income, Investments, EMI &amp; Credit, Tax Planning and Budget for you to check.
         </p>
         {/* Stacked on a phone, where each needs the full width for its label. */}
         <div className="mt-4 grid grid-cols-1 gap-2 sm:mx-auto sm:max-w-md sm:grid-cols-2">
@@ -176,6 +178,7 @@ export function Documents() {
                 </>
               ),
               deleteLabel: document.name,
+              deleteNote: describeRemoval(planRemoval(document.id, snapshot)) ?? undefined,
             }
           })}
           onSelect={setOpenId}
@@ -200,6 +203,10 @@ export function Documents() {
           file={picked.file}
           onClose={() => {
             setPicked(null)
+          }}
+          onChooseAnother={() => {
+            setPicked(null)
+            fileInput.current?.click()
           }}
         />
       )}

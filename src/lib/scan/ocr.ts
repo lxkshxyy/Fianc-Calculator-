@@ -13,6 +13,8 @@
  * in memory has none to spare for a model nobody is using.
  */
 
+import { ReaderLoadError } from './errors'
+
 /** Any Android WebView from the last few years runs the SIMD build, which is roughly twice as fast. */
 function hasSimd(): boolean {
   try {
@@ -36,12 +38,47 @@ function assetUrl(path: string): string {
   return new URL(`${import.meta.env.BASE_URL}ocr/${path}`, window.location.href).href
 }
 
-export async function recognise(
-  image: HTMLCanvasElement,
-  onProgress?: (progress: number) => void,
-): Promise<string> {
-  const { createWorker } = await import('tesseract.js')
-  const worker = await createWorker('eng', 1, {
+/** One OCR engine, kept for the pages of one document and then shut down. */
+export type Recogniser = {
+  read: (image: HTMLCanvasElement, onProgress?: (progress: number) => void) => Promise<string>
+  close: () => Promise<void>
+}
+
+/**
+ * Starts the engine once for a whole document. Loading the model is the slow
+ * part of OCR; doing it once rather than for every page is what makes reading
+ * a ten-page scanned statement bearable on a phone.
+ */
+export async function openRecogniser(): Promise<Recogniser> {
+  let report: ((progress: number) => void) | undefined
+  let worker: Awaited<ReturnType<typeof import('tesseract.js').createWorker>>
+  try {
+    const { createWorker } = await import('tesseract.js')
+    worker = await startWorker(createWorker, (progress) => report?.(progress))
+  } catch (error) {
+    throw new ReaderLoadError('photo reader', error)
+  }
+  return {
+    read: async (image, onProgress) => {
+      report = onProgress
+      try {
+        const result = await worker.recognize(image)
+        return result.data.text
+      } finally {
+        report = undefined
+      }
+    },
+    close: async () => {
+      await worker.terminate()
+    },
+  }
+}
+
+function startWorker(
+  createWorker: typeof import('tesseract.js').createWorker,
+  onProgress: (progress: number) => void,
+) {
+  return createWorker('eng', 1, {
     workerPath: assetUrl('worker.min.js'),
     corePath: assetUrl(
       hasSimd() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js',
@@ -54,13 +91,20 @@ export async function recognise(
     cacheMethod: 'none',
     workerBlobURL: false,
     logger: (message: { status: string; progress: number }) => {
-      if (message.status === 'recognizing text') onProgress?.(message.progress)
+      if (message.status === 'recognizing text') onProgress(message.progress)
     },
   })
+}
+
+/** A single image, start to finish. */
+export async function recognise(
+  image: HTMLCanvasElement,
+  onProgress?: (progress: number) => void,
+): Promise<string> {
+  const recogniser = await openRecogniser()
   try {
-    const result = await worker.recognize(image)
-    return result.data.text
+    return await recogniser.read(image, onProgress)
   } finally {
-    await worker.terminate()
+    await recogniser.close()
   }
 }

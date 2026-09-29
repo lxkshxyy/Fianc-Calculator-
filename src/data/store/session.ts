@@ -194,6 +194,12 @@ export const useSession = create<SessionState>()(
        * cleared by hand.
        */
       merge: (persisted, current) => {
+        /*
+         * Nothing stored yet — a first visit. zustand still calls merge, with
+         * `undefined`, and treating that as corrupt storage printed a warning
+         * on every new visitor's console. It is simply the fresh state.
+         */
+        if (persisted === undefined) return current
         const parsed = PersistedSession.safeParse(persisted)
         if (!parsed.success) {
           console.warn(

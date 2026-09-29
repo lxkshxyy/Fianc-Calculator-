@@ -229,6 +229,7 @@ export const hi: Dictionary = {
   'form.amountTooLarge': 'बहुत बड़ी रकम। सीमा {max}।',
   'record.deleteNamed': '{name} हटाएं',
   'record.confirmDelete': 'इसे हटा दें? यह वापस नहीं आएगा।',
+  'record.fromDocument': '{name} से',
 
   /* ── Empty and loading states ────────────────────────────────────────── */
   'state.loading': 'लोड हो रहा है…',

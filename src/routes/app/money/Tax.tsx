@@ -3,7 +3,7 @@ import { Receipt, ShieldAlert } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { RecordList } from '@/components/ui/RecordList'
-import { useSnapshot } from '@/data/store/data'
+import { useData, useSnapshot, useSourceName } from '@/data/store/data'
 import { TAX_RATES } from '@/domain/taxConfig'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
 
@@ -17,6 +17,8 @@ import { ModuleScreen, ModuleSection } from '../ModuleScreen'
  */
 export function Tax() {
   const snapshot = useSnapshot()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   if (snapshot === null) return null
 
   const configured = TAX_RATES.length > 0
@@ -74,7 +76,12 @@ export function Tax() {
             title: entry.label,
             subtitle: entry.section,
             value: <CurrencyText value={entry.amount} size="body" tone="inherit" />,
+            deleteLabel: `${entry.label} (${entry.section})`,
+            source: sourceName(entry),
           }))}
+          onDelete={(id) => {
+            void removeRecord('deductions', id)
+          }}
           empty={{
             icon: Receipt,
             title: 'Nothing claimed yet',

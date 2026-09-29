@@ -1,5 +1,5 @@
 import { MoreVertical } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { AppButton } from '@/components/ui/AppButton'
@@ -11,6 +11,11 @@ import { cn } from '@/lib/cn'
 import { BRAND } from '@/config/brand'
 import { APP_BASE, routeMetaFor } from './navigation'
 
+/** Scroll (px) past the expanded header's own height before it collapses. */
+const COLLAPSE_MARGIN = 16
+/** Scroll (px) at or under which a collapsed header opens again. */
+const EXPAND_AT = 8
+
 /**
  * §5.3 — desktop shows title + subtitle left and actions right; mobile is a
  * compact sticky bar whose title collapses from 34px to 20px on scroll.
@@ -18,6 +23,21 @@ import { APP_BASE, routeMetaFor } from './navigation'
  * §10.10 — the collapse exists so a sticky header does not eat a third of a
  * small screen. The scroll listener is passive and only flips a boolean, so it
  * never blocks scrolling.
+ *
+ * The collapse points are chosen so the header can never flicker. It used to
+ * collapse past 24px and expand again at or under 24px. Collapsing makes the
+ * page shorter by the height the header gives up, so on a page with little to
+ * scroll (Budget with no limits set had 97px of room on a laptop) the browser
+ * pulled the scroll back under 24px, the header grew back, the page grew, the
+ * next wheel tick collapsed it again — the header blinked between 90px and 53px
+ * for as long as you scrolled. Chrome's scroll anchoring does the same on long
+ * pages: it moves the scroll back by whatever the header just gave up.
+ *
+ * Now it collapses only once the page has scrolled past the header's full
+ * expanded height (plus a margin), and expands only back near the top. Whatever
+ * the collapse takes away is less than that full height, so the scroll can
+ * never fall back into the expand zone, and a page too short to scroll that far
+ * simply keeps the full header — there is nothing for it to make room for.
  *
  * §10.3 — top padding clears the notch via `env(safe-area-inset-top)`.
  */
@@ -30,8 +50,13 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
   /* One place stamps <html lang>, and the header is on every private screen. */
   useHtmlLang()
   const [collapsed, setCollapsed] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
+    let isCollapsed = false
+    /* The tallest the expanded header has been — see the note above. */
+    let expandedHeight = 0
+
     const onScroll = (): void => {
       /*
        * Sheet.tsx's scroll lock sets body{position:fixed}, which clamps scrollY to
@@ -39,7 +64,17 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
        * page visibly grows behind the 70%-opaque scrim, then snaps back on close.
        */
       if (document.body.style.position === 'fixed') return
-      setCollapsed(window.scrollY > 24)
+
+      const header = headerRef.current
+      if (!isCollapsed && header !== null) {
+        expandedHeight = Math.max(expandedHeight, header.offsetHeight)
+      }
+
+      const y = window.scrollY
+      const next = isCollapsed ? y > EXPAND_AT : y > expandedHeight + COLLAPSE_MARGIN
+      if (next === isCollapsed) return
+      isCollapsed = next
+      setCollapsed(next)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -54,6 +89,7 @@ export function AppHeader({ onOpenMore }: { onOpenMore: () => void }) {
 
   return (
     <header
+      ref={headerRef}
       className={cn(
         /*
          * Solid, not 95% + blur. On the phone the blur let whatever scrolled

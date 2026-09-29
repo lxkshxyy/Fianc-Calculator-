@@ -156,13 +156,33 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff2}'],
         /*
-         * The OCR engine and the PDF reader are several megabytes and only
-         * needed by someone scanning a document — they load on first use rather
-         * than being forced into every install's precache.
+         * The PDF reader (pdf.js's worker, 1.3 MB) is precached with everything
+         * else. It used to be left out to keep installs small, and then any
+         * PDF picked with no connection — or on a computer whose local website
+         * server had stopped, while the app itself opened from this cache —
+         * failed with "This file could not be read". Reading a PDF is core to
+         * Documents, so it now works whenever the app opens at all.
+         *
+         * The OCR engine and model (about 9 MB) stay out of the precache: most
+         * visitors never photograph a paper. They are cached the first time
+         * they are used instead (runtimeCaching below), and from then on photos
+         * are read offline too.
          */
-        globIgnores: ['ocr/**', '**/pdf.worker*'],
+        globIgnores: ['ocr/**'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /\/ocr\/.+/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wrc-ocr',
+              expiration: { maxEntries: 8 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
         /* Every route is client-rendered, so a cold deep link offline still
            resolves to the shell rather than the browser's error page. */
         navigateFallback: 'index.html',

@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { Meter, RecordList } from '@/components/ui/RecordList'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { useData, useDerived, useSnapshot, useSourceName } from '@/data/store/data'
 import { safeRatio } from '@/domain/metrics'
 import { formatPercent } from '@/lib/money'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
@@ -15,6 +15,8 @@ const TERM_COVER_MULTIPLE = 10
 export function Insurance() {
   const snapshot = useSnapshot()
   const derived = useDerived()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   if (snapshot === null || derived === null) return null
 
   const annualIncome = derived.monthlyIncome * 12
@@ -105,7 +107,12 @@ export function Insurance() {
                   <CurrencyText value={policy.annualPremium} size="body" tone="inherit" /> a year
                 </>
               ),
+              deleteLabel: policy.name,
+              source: sourceName(policy),
             }))}
+          onDelete={(id) => {
+            void removeRecord('policies', id)
+          }}
           empty={{
             icon: Shield,
             title: 'No policies recorded',

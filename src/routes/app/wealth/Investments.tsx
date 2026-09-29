@@ -4,7 +4,7 @@ import { CurrencyText } from '@/components/ui/CurrencyText'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { RecordList } from '@/components/ui/RecordList'
 import { todayIso } from '@/data/schema'
-import { useDerived, useSnapshot } from '@/data/store/data'
+import { useData, useDerived, useSnapshot, useSourceName } from '@/data/store/data'
 import { xirr } from '@/domain/xirr'
 import { EM_DASH, formatPercent } from '@/lib/money'
 import { ModuleScreen, ModuleSection } from '../ModuleScreen'
@@ -14,6 +14,8 @@ const HIGH_EXPENSE_RATIO = 1.0
 
 export function Investments() {
   const snapshot = useSnapshot()
+  const removeRecord = useData((state) => state.remove)
+  const sourceName = useSourceName()
   const derived = useDerived()
   if (snapshot === null || derived === null) return null
 
@@ -82,8 +84,13 @@ export function Investments() {
               value: <CurrencyText value={investment.current} size="body" tone="inherit" />,
               meta:
                 rate === null ? 'Return not yet computable' : `${formatPercent(rate, 1)} a year`,
+              deleteLabel: investment.name,
+              source: sourceName(investment),
             }
           })}
+          onDelete={(id) => {
+            void removeRecord('investments', id)
+          }}
           empty={{
             icon: TrendingUp,
             title: 'Nothing invested yet',

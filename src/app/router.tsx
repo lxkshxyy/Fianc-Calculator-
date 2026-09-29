@@ -24,9 +24,6 @@ function lazyRoute(loader: () => Promise<{ default: ComponentType }>) {
   )
 }
 
-const publicStub = () =>
-  import('@/routes/public/PublicStub').then((module) => ({ default: module.PublicStub }))
-
 const PUBLIC_ROUTES: RouteObject[] = [
   {
     path: '/',
@@ -41,6 +38,20 @@ const PUBLIC_ROUTES: RouteObject[] = [
     ),
   },
   {
+    path: '/stages',
+    element: lazyRoute(() => import('@/routes/public/Stages').then((m) => ({ default: m.Stages }))),
+  },
+  {
+    path: '/pricing',
+    element: lazyRoute(() =>
+      import('@/routes/public/Pricing').then((m) => ({ default: m.Pricing })),
+    ),
+  },
+  {
+    path: '/faq',
+    element: lazyRoute(() => import('@/routes/public/Faq').then((m) => ({ default: m.Faq }))),
+  },
+  {
     path: '/request-centre',
     element: lazyRoute(() =>
       import('@/routes/public/RequestCentre').then((m) => ({ default: m.RequestCentre })),
@@ -48,9 +59,9 @@ const PUBLIC_ROUTES: RouteObject[] = [
   },
   {
     /*
-     * Only the Insurance Review form exists so far (§9.3 makes it the reference
-     * implementation). The other three services resolve to the stub, which says
-     * so, rather than 404ing a link the index page renders.
+     * Insurance Review has its own seven-step form (§9.3's reference
+     * implementation); the other three services share ServiceRequest, which
+     * also answers an unknown service name with a way back to the index.
      */
     path: '/request-centre/insurance-review',
     element: lazyRoute(() =>
@@ -59,13 +70,28 @@ const PUBLIC_ROUTES: RouteObject[] = [
       })),
     ),
   },
-  { path: '/request-centre/:service', element: lazyRoute(publicStub) },
+  {
+    path: '/request-centre/:service',
+    element: lazyRoute(() =>
+      import('@/routes/public/ServiceRequest').then((m) => ({ default: m.ServiceRequest })),
+    ),
+  },
   {
     path: '/about',
     element: lazyRoute(() => import('@/routes/public/About').then((m) => ({ default: m.About }))),
   },
-  { path: '/contact', element: lazyRoute(publicStub) },
-  { path: '/forgot-password', element: lazyRoute(publicStub) },
+  {
+    path: '/contact',
+    element: lazyRoute(() =>
+      import('@/routes/public/Contact').then((m) => ({ default: m.Contact })),
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: lazyRoute(() =>
+      import('@/routes/public/ForgotPassword').then((m) => ({ default: m.ForgotPassword })),
+    ),
+  },
   {
     path: '/legal/:doc',
     element: lazyRoute(() => import('@/routes/public/Legal').then((m) => ({ default: m.Legal }))),

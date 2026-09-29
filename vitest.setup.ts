@@ -37,6 +37,16 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   })
 }
 
+/*
+ * The public pages reset the scroll on every navigation and jump to a section
+ * when the address carries one. jsdom has no layout, so it reports `scrollTo`
+ * as "not implemented" on the console and has no `scrollIntoView` at all.
+ */
+if (typeof window !== 'undefined') {
+  window.scrollTo = () => undefined
+  Element.prototype.scrollIntoView = () => undefined
+}
+
 if (typeof globalThis.ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class {
     observe(): void {}

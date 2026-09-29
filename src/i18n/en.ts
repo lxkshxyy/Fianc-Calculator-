@@ -236,6 +236,7 @@ export const en = {
   /* ── Record rows ─────────────────────────────────────────────────────── */
   'record.deleteNamed': 'Delete {name}',
   'record.confirmDelete': 'Remove this? It cannot be undone.',
+  'record.fromDocument': 'From {name}',
 } as const
 
 export type TranslationKey = keyof typeof en

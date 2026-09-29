@@ -43,7 +43,7 @@ export function Legal() {
 
   if (entry === undefined) {
     return (
-      <PublicShell>
+      <PublicShell title="Not found">
         <section className="py-16">
           <h1 className="text-text text-title font-semibold">Document not found</h1>
           <p className="text-text-2 mt-2 text-sm">
@@ -57,7 +57,7 @@ export function Legal() {
   }
 
   return (
-    <PublicShell>
+    <PublicShell title={entry.title}>
       <section className="py-12">
         <h1 className="text-text text-[clamp(1.75rem,5vw,2.5rem)] font-semibold tracking-tight text-balance">
           {entry.title}

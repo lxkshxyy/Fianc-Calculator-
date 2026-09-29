@@ -1,13 +1,25 @@
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LayoutDashboard,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Target,
+  User,
+} from 'lucide-react'
 import welcomeDark from '@/assets/welcome-dark.webp'
 import welcomeLight from '@/assets/welcome-light.webp'
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 
 import { AppButton } from '@/components/ui/AppButton'
 import { BRAND } from '@/config/brand'
 import { cn } from '@/lib/cn'
+import { DEMO_NAME, isDemoAccount } from '@/data/seed/showcase'
 import { useData } from '@/data/store/data'
 import { useSession } from '@/data/store/session'
 import {
@@ -16,7 +28,10 @@ import {
   isPasswordSupported,
   verifyPasscode,
 } from '@/lib/passcode'
+import { isAppShell } from '@/native/platform'
 import { WrcMark } from './AuthArt'
+import { DemoEntry } from './DemoEntry'
+import { PublicShell } from './PublicShell'
 
 /**
  * §6 — one route, three screens, switched by `?mode=`.
@@ -28,6 +43,14 @@ import { WrcMark } from './AuthArt'
  * The welcome screen is the first thing a new install shows and the thing a
  * sign-out returns to, which is why it is the bare route rather than a mode of
  * its own: nothing has to know a query string to land somewhere sensible.
+ *
+ * ── App and website ─────────────────────────────────────────────────────────
+ * The welcome board and the phone-width forms are the Android app's. The same
+ * route on the website opened them too — a 448px phone screen floating in a
+ * laptop window, with no way back to the site around it. On the website the
+ * bare route is the log-in form, and both forms sit inside the site's own
+ * header and footer beside a brand panel (`WebAuthScreen`). `isAppShell` is the
+ * switch; the forms themselves are shared, so the two cannot drift apart.
  *
  * ── On the password ─────────────────────────────────────────────────────────
  * It is real — hashed, salted, and checked — but it locks this device rather
@@ -80,7 +103,7 @@ export function Auth() {
   /* Carried through every link, so a guarded URL survives the trip. */
   const suffix = redirectTo === null ? '' : `&redirectTo=${encodeURIComponent(redirectTo)}`
 
-  if (mode === 'welcome') return <Welcome suffix={suffix} />
+  if (mode === 'welcome' && isAppShell()) return <Welcome suffix={suffix} />
   if (mode === 'signup') return <SignUp destination={destination} suffix={suffix} />
   return <LogIn destination={destination} suffix={suffix} />
 }
@@ -205,6 +228,44 @@ function LogIn({ destination, suffix }: { destination: string; suffix: string })
           Create an account
           <ArrowRight aria-hidden className="size-4" />
         </AppButton>
+      </AuthScreen>
+    )
+  }
+
+  /* The website's demo household (seed/showcase.ts). It has no password — there
+     is nothing in it to protect — so the way back in is one button. */
+  if (isDemoAccount(account)) {
+    return (
+      <AuthScreen
+        title="Welcome Back!"
+        subtitle="This browser has the demo account."
+        suffix={suffix}
+      >
+        <p className="text-text-2 text-meta">
+          {DEMO_NAME}’s sample household is saved here, with anything you changed while exploring.
+        </p>
+        <AppButton
+          variant="primary"
+          block
+          className="rounded-pill mt-5 min-h-13 text-base font-semibold"
+          onClick={() => {
+            signIn({ remember: true })
+            void navigate(destination, { replace: true })
+          }}
+        >
+          Continue the demo
+          <ArrowRight aria-hidden className="size-4" />
+        </AppButton>
+        <p className="text-caption text-text-2 mt-5 text-center">
+          Want your own?{' '}
+          <Link
+            to={`/auth?mode=signup${suffix}`}
+            className="text-accent hover:text-accent-strong font-semibold"
+          >
+            Create an account
+          </Link>{' '}
+          — it replaces the demo.
+        </p>
       </AuthScreen>
     )
   }
@@ -475,7 +536,7 @@ function SignUp({ destination, suffix }: { destination: string; suffix: string }
        */}
       <p className="text-caption text-text-3 mt-4">
         {supported
-          ? `Your password locks ${BRAND.short} on this phone. Everything you enter stays on this device — there is no server holding it, and no account to recover it from.`
+          ? `Your password locks ${BRAND.short} on this ${isAppShell() ? 'phone' : 'browser'}. Everything you enter stays on this device — there is no server holding it, and no account to recover it from.`
           : `${BRAND.short} keeps everything on this device. This connection cannot set a password; the installed app can.`}
       </p>
 
@@ -507,6 +568,14 @@ function AuthScreen({
   suffix?: string
   children: ReactNode
 }) {
+  if (!isAppShell()) {
+    return (
+      <WebAuthScreen title={title} subtitle={subtitle}>
+        {children}
+      </WebAuthScreen>
+    )
+  }
+
   return (
     <div className="auth-sky relative min-h-dvh overflow-hidden">
       <AuthGlow />
@@ -532,6 +601,100 @@ function AuthScreen({
         <div className="auth-card rounded-card mt-5 p-5">{children}</div>
       </div>
     </div>
+  )
+}
+
+const WEB_POINTS: { icon: typeof Mail; title: string; line: string }[] = [
+  {
+    icon: LayoutDashboard,
+    title: 'Your whole picture',
+    line: 'Income, spending, loans and investments on one dashboard.',
+  },
+  {
+    icon: Target,
+    title: 'A plan for every goal',
+    line: 'The monthly figure that gets you there, and milestones on the way.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Private by design',
+    line: 'Your figures stay on your device. Nothing is uploaded.',
+  },
+]
+
+/**
+ * The website's sign-in page: the site's header and footer, the form on the
+ * right, and on a wide screen the brand beside it — the place a phone gives to
+ * the welcome board. Below `lg` the panel steps aside and the form leads.
+ */
+function WebAuthScreen({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle: string
+  children: ReactNode
+}) {
+  const location = useLocation()
+  const account = useSession((state) => state.account)
+  const signingUp = new URLSearchParams(location.search).get('mode') === 'signup'
+  /* The log-in form already leads with "Continue the demo" for the demo account. */
+  const offerDemo = signingUp || !isDemoAccount(account)
+
+  return (
+    <PublicShell title={signingUp ? 'Sign up' : 'Log in'}>
+      <section className="grid items-start gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-14 lg:py-14">
+        <aside className="auth-sky border-border rounded-card relative hidden overflow-hidden border p-10 lg:block">
+          <AuthGlow />
+          <div className="relative">
+            <div className="flex justify-start">
+              <WrcMark size="lg" />
+            </div>
+            <p className="text-text font-display mt-10 text-[2.5rem] leading-[1.08] font-semibold tracking-tight text-balance">
+              Build today,
+              <br />
+              <span className="text-accent">secure tomorrow.</span>
+            </p>
+            <p className="text-lead text-text-2 mt-4">
+              Track · Plan · Grow — all your finances, in one place.
+            </p>
+            <ul className="mt-10 space-y-5">
+              {WEB_POINTS.map((point) => (
+                <li key={point.title} className="flex items-start gap-3.5">
+                  <span className="rounded-tile bg-surface-2 border-border shrink-0 border p-2">
+                    <point.icon aria-hidden className="text-accent size-5" />
+                  </span>
+                  <span>
+                    <span className="text-text block font-semibold">{point.title}</span>
+                    <span className="text-text-2 block text-sm">{point.line}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+
+        <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+          <h1 className="text-text text-[1.75rem] leading-tight font-bold tracking-tight">
+            {title}
+          </h1>
+          <p className="text-text-2 text-meta mt-1.5">{subtitle}</p>
+
+          <div className="auth-card rounded-card mt-5 p-5 sm:p-6">{children}</div>
+
+          {offerDemo ? (
+            <div className="border-border bg-surface rounded-card mt-4 border p-4">
+              <p className="text-text text-sm font-medium">Just looking around?</p>
+              <p className="text-caption text-text-2 mt-1">
+                Open a sample household with every screen filled in. No sign-up needed.
+              </p>
+              <DemoEntry block size="sm" className="mt-3" />
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </PublicShell>
   )
 }
 

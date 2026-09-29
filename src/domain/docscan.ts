@@ -128,6 +128,18 @@ const KIND_SIGNALS: { kind: DocumentKind; patterns: RegExp[] }[] = [
     ],
   },
   {
+    kind: 'salary-slip',
+    patterns: [
+      /\b(?:pay|salary)\s*slip\b|\bpayslip\b/i,
+      /\bnet\s*(?:pay|salary)\b|\btake[\s-]*home\b/i,
+      /\bgross\s*(?:earnings|salary|pay)\b|\btotal\s*earnings\b/i,
+      /^\s*basic(?:\s*(?:pay|salary))?\b(?!\s*sum)/im,
+      /\bHRA\b|house\s*rent\s*allowance/i,
+      /\bpay\s*period\b|\bsalary\s*for\s*(?:the\s*)?month\b|\bpay\s*date\b/i,
+      /\btotal\s*deductions\b/i,
+    ],
+  },
+  {
     kind: 'tax',
     patterns: [
       /form\s*(?:no\.?\s*)?16\b/i,
@@ -162,6 +174,18 @@ const KIND_SIGNALS: { kind: DocumentKind; patterns: RegExp[] }[] = [
     ],
   },
   {
+    kind: 'bank-statement',
+    patterns: [
+      /\b(?:account|bank)\s*statement\b|\bstatement\s*of\s*account\b/i,
+      /\bopening\s*balance\b/i,
+      /\bclosing\s*balance\b/i,
+      /\bwithdrawals?\b|\bdebits?\b/i,
+      /\bdeposits?\b|\bcredits?\b/i,
+      /\bIFSC\b/,
+      /\b(?:txn|transaction|value)\s*date\b/i,
+    ],
+  },
+  {
     kind: 'identity',
     patterns: [
       /permanent\s*account\s*number/i,
@@ -182,9 +206,11 @@ const KIND_SIGNALS: { kind: DocumentKind; patterns: RegExp[] }[] = [
 const KIND_NAME: Record<DocumentKind, string> = {
   'insurance-policy': 'policy',
   'premium-receipt': 'premium receipt',
+  'salary-slip': 'salary slip',
   tax: 'tax document',
   investment: 'statement',
   loan: 'loan document',
+  'bank-statement': 'statement',
   identity: 'ID',
   will: 'will',
   other: 'document',
@@ -287,8 +313,13 @@ export function parseAmountText(text: string): number | null {
    * Without a currency marker a figure has to be *printed* like money — grouped
    * with commas, carrying paise, or closed with "/-". A bare run of digits on
    * these papers is far more often a receipt or reference number.
+   *
+   * One stray symbol is allowed in front of it, because OCR often reads a
+   * printed ₹ as "%", "=" or "?": a photographed "Sum Assured ₹50,00,000" came
+   * back as "%50,00,000" and the cover was lost. The figure still has to be
+   * printed like money, so this recovers amounts and never invents one.
    */
-  const bare = /(?:^|[\s:])((?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{2})?)(\s*\/-)?/.exec(text)
+  const bare = /(?:^|[\s:])[%=?&]?((?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{2})?)(\s*\/-)?/.exec(text)
   const bareLooksLikeMoney =
     bare?.[1] !== undefined && (/[,.]/.test(bare[1]) || bare[2] !== undefined)
   const raw = marked?.[1] ?? (bareLooksLikeMoney ? bare?.[1] : undefined)
@@ -304,8 +335,15 @@ function lastFour(value: string): string {
 }
 
 /** A name as printed, tidied: "MR. RAHUL  KUMAR" → "Rahul Kumar". */
+/**
+ * Where a name printed in a two-column block runs into the next label:
+ * "Mr. Aarav Mehta Account No. 5010…" is a name followed by another field.
+ */
+const NAME_STOP =
+  /\b(?:account|a\/c|acct|no|number|ifsc|customer|pan|mobile|phone|e-?mail|address|branch|period|type|currency|date|dob|policy|folio|nominee|relationship|designation|employee|code|id)\b/i
+
 function tidyName(raw: string): string | null {
-  const cleaned = raw
+  const cleaned = (raw.split(NAME_STOP)[0] ?? '')
     .replace(/^(?:mr|mrs|ms|miss|dr|shri|smt|kumari)\.?\s+/i, '')
     .replace(/[^A-Za-z .']/g, ' ')
     .replace(/\s{2,}/g, ' ')
@@ -381,6 +419,28 @@ const LABELS = {
   rate: /\b(?:rate\s*of\s*interest|interest\s*rate|roi)\b/i,
 }
 
+function providerIn(text: string): string | null {
+  return PROVIDERS.find((entry) => entry.pattern.test(text))?.name ?? null
+}
+
+/**
+ * The top of the first page, where the issuer's letterhead is: the lines above
+ * the first dated row (a statement's transactions name other banks), and never
+ * more than fifteen.
+ */
+function topOf(text: string): string {
+  const lines = text.split('\n').slice(0, 15)
+  const firstRow = lines.findIndex((line) =>
+    /^\d{1,2}[/.\- ](?:\d{1,2}|[A-Za-z]{3,9})[/.\- ,]*(?:\d{4}|\d{2})\b/.test(line),
+  )
+  return (firstRow < 0 ? lines : lines.slice(0, firstRow)).join('\n')
+}
+
+/** Without UPI handles and email addresses: "zomato@hdfcbank" is a merchant's bank, not the issuer. */
+function withoutHandles(text: string): string {
+  return text.replace(/\S+@\S+/g, ' ')
+}
+
 /**
  * Every detail this text yields, in the order a person would want to read them.
  */
@@ -395,7 +455,7 @@ export function extractFields(raw: string): ScanField[] {
     fields.push({ key, label, value: value.trim() })
   }
 
-  add('provider', 'Provider', PROVIDERS.find((entry) => entry.pattern.test(text))?.name ?? null)
+  add('provider', 'Provider', providerIn(topOf(text)) ?? providerIn(withoutHandles(text)))
 
   const holder =
     firstOf(afterLabel(lines, LABELS.holder), tidyName) ??
@@ -446,6 +506,281 @@ export function extractFields(raw: string): ScanField[] {
   return fields
 }
 
+/* ------------------------------------------------------------------ *
+ * Details that only make sense for one kind of paper
+ * ------------------------------------------------------------------ */
+
+/** "Pvt. Ltd.", "Limited", "LLP"… — the tail that marks a line as a company's name. */
+const COMPANY_TAIL =
+  /[\s,]+(?:pvt\.?|private|ltd\.?|limited|llp|inc\.?|co\.?|company|corporation)(?=[\s,.]|$)[\s\S]*$/i
+
+/** "Demo Tech Solutions Pvt. Ltd." → "Demo Tech Solutions". */
+function companyName(raw: string): string | null {
+  const name = raw
+    .replace(COMPANY_TAIL, '')
+    .replace(/[^A-Za-z0-9&.' -]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    /* A logo's initial, read as a letter of its own in front of the name. */
+    .replace(/^(?:[A-Za-z]\s+)+(?=\S{2})/, '')
+  /* Three digits or more is an ID (a TAN, a PAN), not a name. */
+  if (/(?:\d.*){3}/.test(name)) return null
+  return name.length >= 3 && name.length <= 60 ? name : null
+}
+
+/** The first line near the top that is a company's name, optionally only one that matches `like`. */
+function companyLine(lines: string[], like?: RegExp, unlike?: RegExp): string | null {
+  for (const line of lines.slice(0, 20)) {
+    if (!COMPANY_TAIL.test(line)) continue
+    if (like !== undefined && !like.test(line)) continue
+    if (unlike?.test(line) === true) continue
+    const name = companyName(line)
+    if (name !== null) return name
+  }
+  return null
+}
+
+/** "Demo Life Insurance Co. Ltd." → "Demo Life": what is printed before "Insurance". */
+function insurerFrom(lines: string[]): string | null {
+  for (const line of lines.slice(0, 20)) {
+    const match =
+      /^(.{2,40}?)\s+(?:general\s+|health\s+)?insurance\b.*(?:co\b|company|ltd|limited|corporation)/i.exec(
+        line,
+      )
+    const name = match?.[1]
+      ?.replace(/[^A-Za-z0-9&.' -]/g, ' ')
+      .trim()
+      .replace(/^(?:[A-Za-z]\s+)+(?=\S{2})/, '')
+    if (name !== undefined && name.length >= 2) return name
+  }
+  return null
+}
+
+/** "240 months" → 240, "20 years" → 240. A bare number is read as months. */
+export function parseMonths(text: string): number | null {
+  const match = /(\d{1,3})\s*(months?|mths?|m\b|years?|yrs?|y\b)?/i.exec(text)
+  if (match?.[1] === undefined) return null
+  const value = Number(match[1])
+  const unit = (match[2] ?? 'm').toLowerCase()
+  const months = unit.startsWith('y') ? value * 12 : value
+  return months > 0 && months <= 600 ? months : null
+}
+
+/** The last amount printed on a line — the "deductible" column rather than the "gross" one. */
+function lastAmount(text: string): number | null {
+  const all = [...text.matchAll(/(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+\.\d{2})(?!\d)/g)]
+  const raw = all.at(-1)?.[1]
+  if (raw === undefined) return null
+  const value = Number(raw.replace(/,/g, ''))
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+const DEDUCTION_SECTIONS: { key: string; label: string; pattern: RegExp }[] = [
+  { key: 'ded80C', label: 'Section 80C', pattern: /\b80\s*C\b/i },
+  { key: 'ded80CCD1B', label: 'Section 80CCD(1B)', pattern: /\b80\s*CCD\s*\(?\s*1\s*B\s*\)?/i },
+  { key: 'ded80D', label: 'Section 80D', pattern: /\b80\s*D\b/i },
+  { key: 'ded80TTA', label: 'Section 80TTA', pattern: /\b80\s*TTA\b/i },
+]
+
+const KIND_LABELS = {
+  premiumMode: /\b(?:premium\s*)?(?:payment\s*)?mode(?:\s*of\s*payment)?\b/i,
+  employer:
+    /\b(?:name\s*(?:and\s*address\s*)?of\s*the\s*employer|employer(?:'s)?\s*name|company\s*name)\b/i,
+  payPeriod:
+    /\b(?:pay\s*period|pay\s*month|salary\s*(?:slip\s*)?for\s*(?:the\s*)?month(?:\s*of)?|month\s*of)\b/i,
+  grossPay: /\b(?:gross\s*(?:earnings|salary|pay)|total\s*earnings)\b/i,
+  netPay: /\b(?:net\s*(?:pay|salary|amount\s*payable)|take[\s-]*home(?:\s*pay)?)\b/i,
+  grossSalary: /\b(?:gross\s*(?:total\s*)?(?:salary|income)|total\s*income)\b/i,
+  taxDeducted: /\b(?:total\s*)?tax\s*deducted\b/i,
+  loanAmount:
+    /\b(?:loan\s*amount|sanctioned\s*amount|amount\s*sanctioned|disbursed\s*amount|amount\s*disbursed|principal\s*amount)\b/i,
+  outstanding:
+    /\b(?:principal\s*outstanding|outstanding\s*(?:principal|amount|balance|loan)|balance\s*outstanding|loan\s*outstanding)\b/i,
+  emi: /\b(?:EMI(?:\s*amount)?|monthly\s*instal+ment)\b/i,
+  tenureLeft: /\b(?:balance|remaining|residual)\s*tenure\b/i,
+  tenure: /\b(?:loan\s*)?tenure\b|\bterm\s*of\s*(?:the\s*)?loan\b/i,
+  loanStart:
+    /\b(?:date\s*of\s*(?:disbursement|sanction)|disburs\w*\s*date|sanction\s*date|loan\s*start\s*date|first\s*EMI\s*date)\b/i,
+  period: /\b(?:statement\s*period|period)\b/i,
+  openingBalance: /\bopening\s*balance\b/i,
+  closingBalance: /\bclosing\s*balance\b/i,
+  totalValue:
+    /\b(?:total\s*(?:portfolio\s*)?(?:market\s*)?value|portfolio\s*value|total\s*valuation)\b/i,
+}
+
+/** Keys a kind's own details make redundant: "Amount" says less than "Net pay". */
+const SUPERSEDED_BY: Partial<Record<DocumentKind, string>> = {
+  'salary-slip': 'amount',
+  tax: 'amount',
+  loan: 'amount',
+  'bank-statement': 'amount',
+  investment: 'amount',
+}
+
+/**
+ * The details one kind of paper carries on top of the common ones: what a salary
+ * slip, a Form 16, a loan letter or a bank statement needs for its figures to be
+ * put to use elsewhere in the app (docimport.ts).
+ */
+export function kindFields(raw: string, kind: DocumentKind, common: ScanField[]): ScanField[] {
+  const text = normaliseText(raw)
+  const lines = text.split('\n')
+  const fields: ScanField[] = []
+  const has = (key: string): boolean =>
+    common.some((field) => field.key === key) || fields.some((field) => field.key === key)
+  function add(key: string, label: string, value: string | null): void {
+    if (value === null || value.trim() === '' || has(key)) return
+    fields.push({ key, label, value: value.trim() })
+  }
+  const money = (label: RegExp): string | null => {
+    const value = firstOf(afterLabel(lines, label), parseAmountText)
+    return value === null ? null : formatFull(value)
+  }
+  const provider = common.find((field) => field.key === 'provider')?.value ?? null
+
+  if (kind === 'insurance-policy' || kind === 'premium-receipt') {
+    if (provider === null) add('insurer', 'Insurer', insurerFrom(lines))
+    const mode = firstOf(afterLabel(lines, KIND_LABELS.premiumMode), (candidate) => {
+      const match = /\b(monthly|quarterly|half[-\s]?yearly|yearly|annual|single)\b/i.exec(candidate)
+      if (match?.[1] === undefined) return null
+      const word = match[1].toLowerCase().replace(/\s/g, '-')
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
+    add('premiumMode', 'Premium paid', mode)
+  }
+
+  if (kind === 'salary-slip' || kind === 'tax') {
+    const employer =
+      firstOf(afterLabel(lines, KIND_LABELS.employer), companyName) ??
+      companyLine(lines, undefined, /\bbank\b|\binsurance\b/i)
+    add('employer', 'Employer', employer)
+  }
+
+  if (kind === 'salary-slip') {
+    const period = firstOf(afterLabel(lines, KIND_LABELS.payPeriod), (candidate) => {
+      const match = /([A-Za-z]{3,9})[\s,'-]*(\d{4}|\d{2})\b/.exec(candidate)
+      if (match?.[1] === undefined || match[2] === undefined) return null
+      const index = MONTHS.indexOf(match[1].slice(0, 3).toLowerCase() as (typeof MONTHS)[number])
+      if (index < 0) return null
+      return `${MONTH_LABEL[index] ?? ''} ${String(fourDigitYear(match[2]))}`
+    })
+    add('payPeriod', 'Pay period', period)
+    add('grossPay', 'Gross pay (month)', money(KIND_LABELS.grossPay))
+    add('netPay', 'Net pay (month)', money(KIND_LABELS.netPay))
+  }
+
+  if (kind === 'tax') {
+    add('grossSalary', 'Gross salary (year)', money(KIND_LABELS.grossSalary))
+    for (const section of DEDUCTION_SECTIONS) {
+      /* The first line naming the section that also carries a figure — not a heading. */
+      const value = firstOf(
+        lines.filter((candidate) => section.pattern.test(candidate)),
+        lastAmount,
+      )
+      add(section.key, section.label, value === null ? null : formatFull(value))
+    }
+    add('taxDeducted', 'Tax deducted (TDS)', money(KIND_LABELS.taxDeducted))
+  }
+
+  if (kind === 'loan') {
+    if (provider === null) {
+      add('lender', 'Lender', companyLine(lines, /\b(?:bank|financ\w*|housing|credit|capital)\b/i))
+    }
+    add('loanAmount', 'Loan amount', money(KIND_LABELS.loanAmount))
+    add('outstanding', 'Still owed', money(KIND_LABELS.outstanding))
+    add('emi', 'EMI', money(KIND_LABELS.emi))
+    const months = (label: RegExp, among: string[]): string | null => {
+      const value = firstOf(afterLabel(among, label), parseMonths)
+      return value === null ? null : `${String(value)} months`
+    }
+    add('tenureLeft', 'Months left', months(KIND_LABELS.tenureLeft, lines))
+    /* "Balance tenure" also says "tenure"; it is not the loan's full term. */
+    const fullTerm = lines.filter((line) => !KIND_LABELS.tenureLeft.test(line))
+    add('tenure', 'Tenure', months(KIND_LABELS.tenure, fullTerm))
+    add('loanStart', 'Loan started', firstOf(afterLabel(lines, KIND_LABELS.loanStart), parseDate))
+  }
+
+  if (kind === 'bank-statement') {
+    if (provider === null) add('bank', 'Bank', companyLine(lines, /\bbank\b/i))
+    const period = firstOf(afterLabel(lines, KIND_LABELS.period), (candidate) => {
+      const from = parseDate(candidate)
+      if (from === null) return null
+      const rest = candidate.slice(candidate.search(/\bto\b|\s-\s|\s–\s/i) + 1)
+      const to = parseDate(rest)
+      return to === null || to === from ? from : `${from} to ${to}`
+    })
+    add('period', 'Statement period', period)
+    add('openingBalance', 'Opening balance', money(KIND_LABELS.openingBalance))
+    add('closingBalance', 'Closing balance', money(KIND_LABELS.closingBalance))
+  }
+
+  if (kind === 'investment') {
+    if (provider === null) {
+      const house = lines
+        .slice(0, 20)
+        .map((line) => /^(?:[A-Za-z]\s+)*(.{2,40}?\bmutual\s*fund)\b/i.exec(line)?.[1] ?? null)
+        .find((found) => found !== null)
+      add('fundHouse', 'Fund house', house ?? null)
+    }
+    add('totalValue', 'Total value', money(KIND_LABELS.totalValue))
+  }
+
+  return fields
+}
+
+/* ------------------------------------------------------------------ *
+ * Is this a financial document at all?
+ * ------------------------------------------------------------------ */
+
+/** Details that only a financial paper carries. */
+const FINANCIAL_KEYS = new Set([
+  'policyNumber',
+  'folio',
+  'loanAccount',
+  'account',
+  'cover',
+  'premium',
+  'amount',
+  'rate',
+  'assessmentYear',
+])
+
+/** Words money paperwork uses. A menu has prices; it does not have four of these. */
+const FINANCE_WORDS: RegExp[] = [
+  /₹|\brs\.?\s*\d|\binr\b|\brupees?\b/i,
+  /\bamount\b/i,
+  /\bbalance\b/i,
+  /\bpremium\b|\binsur\w*\b|\bpolicy\b/i,
+  /\bloan\b|\bemi\b/i,
+  /\binterest\b/i,
+  /\bsalary\b|\bwages?\b|\bearnings\b/i,
+  /\btax\b|\bgst\b|\btds\b/i,
+  /\bbank\b|\baccount\b|\bifsc\b/i,
+  /\binvest\w*\b|\bmutual\s*fund\b|\bnav\b|\bunits\b/i,
+  /\bcredit\b|\bdebit\b/i,
+  /\binvoice\b|\breceipt\b/i,
+  /\bpayments?\b|\bpaid\b|\bpayable\b|\bdue\b/i,
+  /\bstatement\b/i,
+]
+
+/**
+ * Whether the text read off a file is money paperwork — a policy, a statement, a
+ * salary slip, a tax form, a loan letter — rather than a photo of anything else.
+ *
+ * A recognised kind is enough on its own. Otherwise it needs two financial
+ * details, or four kinds of money words and a figure printed like money. ID
+ * proofs and wills are kept: they are part of a household's financial papers
+ * (KYC, succession), and the vault has always had a place for them.
+ */
+export function looksFinancial(raw: string, suggestion: ScanSuggestion): boolean {
+  if (suggestion.kind !== 'other') return true
+  if (suggestion.fields.filter((field) => FINANCIAL_KEYS.has(field.key)).length >= 2) return true
+  const text = normaliseText(raw)
+  const words = FINANCE_WORDS.filter((pattern) => pattern.test(text)).length
+  const figure = /(?:₹|rs\.?|inr)\s*\d|\d{1,3}(?:,\d{2,3})+(?:\.\d{2})?/i.test(text)
+  return words >= 4 && figure
+}
+
 /** The document type the text most looks like, or `other`. */
 export function guessKind(raw: string): DocumentKind {
   const text = normaliseText(raw)
@@ -464,20 +799,36 @@ export function guessKind(raw: string): DocumentKind {
   return bestScore >= 2 ? best : 'other'
 }
 
-/** Short tags that make a document findable: who issued it and what sort it is. */
-function suggestTags(text: string, fields: ScanField[]): string[] {
-  const tags = new Set<string>()
-  const provider = fields.find((field) => field.key === 'provider')?.value
-  if (provider !== undefined) tags.add(provider.toLowerCase())
-  const kinds: [RegExp, string][] = [
+/**
+ * Tags a kind of paper can earn. Scoped by kind, so a bank statement with a home
+ * loan EMI on it is not tagged "home loan", nor a Form 16 "health" for its 80D line.
+ */
+const KIND_TAGS: Partial<Record<DocumentKind, [RegExp, string][]>> = {
+  'insurance-policy': [
     [/\bterm\b/i, 'term'],
     [/\bhealth\b|\bmediclaim\b/i, 'health'],
     [/\bmotor\b|\bvehicle\b|\bcar\s*insurance\b/i, 'motor'],
+  ],
+  'premium-receipt': [
+    [/\bterm\b/i, 'term'],
+    [/\bhealth\b|\bmediclaim\b/i, 'health'],
+  ],
+  loan: [
     [/\bhome\s*loan\b|\bhousing\s*loan\b/i, 'home loan'],
-    [/\bmutual\s*fund\b/i, 'mutual fund'],
-    [/\bform\s*(?:no\.?\s*)?16\b/i, 'form 16'],
-  ]
-  for (const [pattern, tag] of kinds) if (pattern.test(text)) tags.add(tag)
+    [/\b(?:car|vehicle)\s*loan\b/i, 'car loan'],
+  ],
+  investment: [[/\bmutual\s*fund\b/i, 'mutual fund']],
+  tax: [[/\bform\s*(?:no\.?\s*)?16\b/i, 'form 16']],
+  'salary-slip': [[/./, 'salary slip']],
+  'bank-statement': [[/./, 'bank statement']],
+}
+
+/** Short tags that make a document findable: who issued it and what sort it is. */
+function suggestTags(text: string, fields: ScanField[], kind: DocumentKind): string[] {
+  const tags = new Set<string>()
+  const provider = fields.find((field) => field.key === 'provider')?.value
+  if (provider !== undefined) tags.add(provider.toLowerCase())
+  for (const [pattern, tag] of KIND_TAGS[kind] ?? []) if (pattern.test(text)) tags.add(tag)
   const year = fields.find((field) => field.key === 'assessmentYear')?.value
   if (year !== undefined) tags.add(`AY ${year}`)
   return [...tags].slice(0, 5)
@@ -486,11 +837,24 @@ function suggestTags(text: string, fields: ScanField[]): string[] {
 /** Everything the review step pre-fills, from one pass over the text. */
 export function suggestFromText(raw: string): ScanSuggestion {
   const text = normaliseText(raw)
-  const fields = extractFields(text)
   const kind = guessKind(text)
-  const provider = fields.find((field) => field.key === 'provider')?.value
-  const name = provider === undefined ? null : `${provider} ${KIND_NAME[kind]}`
-  return { fields, kind, tags: suggestTags(text, fields), name }
+  /* A statement names other banks on every other line; only its letterhead says whose it is. */
+  const common = extractFields(text).filter(
+    (field) =>
+      !(field.key === 'provider' && kind === 'bank-statement' && providerIn(topOf(text)) === null),
+  )
+  const own = kindFields(text, kind, common)
+  const superseded = SUPERSEDED_BY[kind]
+  const fields = [
+    ...common.filter((field) => !(field.key === superseded && own.length > 0)),
+    ...own,
+  ]
+  /* Named after who issued it: the insurer, lender or employer, when it says. */
+  const issuer = ['provider', 'insurer', 'lender', 'employer', 'fundHouse', 'bank']
+    .map((key) => fields.find((field) => field.key === key)?.value)
+    .find((value) => value !== undefined)
+  const name = issuer === undefined ? null : `${issuer} ${KIND_NAME[kind]}`
+  return { fields, kind, tags: suggestTags(text, fields, kind), name }
 }
 
 /** Page text, trimmed to what a record keeps. */

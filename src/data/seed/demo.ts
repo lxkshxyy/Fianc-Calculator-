@@ -341,6 +341,7 @@ export function demoSnapshot(): Snapshot {
       fileId: null,
       scan: null,
       delivery: 'local' as const,
+      imported: [],
     }),
   ]
 

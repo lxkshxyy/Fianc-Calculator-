@@ -29,6 +29,16 @@ export const baseFields = {
   updatedAt: Timestamp,
 }
 
+/**
+ * The document a record was read from (domain/docimport.ts), on the records a
+ * document can add. Deleting that document takes the record with it; a record
+ * with no source was typed in by hand and is never removed on a document's
+ * account. Optional, so everything saved before this existed still parses.
+ */
+export const sourceFields = {
+  fromDocument: Id.optional(),
+}
+
 export function newId(prefix: string): string {
   const random =
     typeof globalThis.crypto?.randomUUID === 'function'
